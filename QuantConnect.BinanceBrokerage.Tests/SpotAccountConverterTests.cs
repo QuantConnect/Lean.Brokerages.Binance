@@ -18,7 +18,7 @@ using Newtonsoft.Json;
 using NUnit.Framework;
 using QuantConnect.BinanceBrokerage.Messages;
 
-namespace QuantConnect.Tests.Brokerages.Binance
+namespace QuantConnect.BinanceBrokerage.Tests
 {
     [TestFixture]
     public class SpotAccountConverterTests

@@ -22,7 +22,7 @@ using QuantConnect.Orders.Fees;
 using QuantConnect.Securities;
 using System;
 
-namespace QuantConnect.Tests.Brokerages.Binance
+namespace QuantConnect.BinanceBrokerage.Tests
 {
     [TestFixture]
     public class BinanceFeeModelTests

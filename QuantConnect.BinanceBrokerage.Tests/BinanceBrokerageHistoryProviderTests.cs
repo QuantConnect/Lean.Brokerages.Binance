@@ -25,7 +25,7 @@ using System;
 using System.Linq;
 using QuantConnect.Lean.Engine.DataFeeds;
 
-namespace QuantConnect.Tests.Brokerages.Binance
+namespace QuantConnect.BinanceBrokerage.Tests
 {
     [TestFixture]
     public partial class BinanceBrokerageTests

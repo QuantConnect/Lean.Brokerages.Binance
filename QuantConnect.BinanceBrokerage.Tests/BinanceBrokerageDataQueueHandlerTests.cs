@@ -22,7 +22,7 @@ using QuantConnect.Logging;
 using QuantConnect.Util;
 using System.Threading;
 
-namespace QuantConnect.Tests.Brokerages.Binance
+namespace QuantConnect.BinanceBrokerage.Tests
 {
     [TestFixture]
     public partial class BinanceBrokerageTests

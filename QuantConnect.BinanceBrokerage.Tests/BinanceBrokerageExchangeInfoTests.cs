@@ -19,7 +19,7 @@ using QuantConnect.ToolBox.BinanceDownloader;
 using System;
 using System.Linq;
 
-namespace QuantConnect.Tests.Brokerages.Binance
+namespace QuantConnect.BinanceBrokerage.Tests
 {
     [TestFixture]
     public class BinanceBrokerageExchangeInfoTests

@@ -28,7 +28,7 @@ using QuantConnect.Logging;
 using System.Threading;
 using QuantConnect.Lean.Engine.DataFeeds;
 
-namespace QuantConnect.Tests.Brokerages.Binance
+namespace QuantConnect.BinanceBrokerage.Tests
 {
     [TestFixture, Explicit("This test requires a configured and testable Binance practice account")]
     public partial class BinanceBrokerageTests : BrokerageTests
