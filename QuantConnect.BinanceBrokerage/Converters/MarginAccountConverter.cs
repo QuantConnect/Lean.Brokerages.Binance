@@ -17,18 +17,18 @@ using Newtonsoft.Json;
 using System;
 using Newtonsoft.Json.Linq;
 
-namespace QuantConnect.BinanceBrokerage.Messages
+namespace QuantConnect.BinanceBrokerage.Converters
 {
     /// <summary>
-    /// Deserializes Spot Account data
-    /// https://binance-docs.github.io/apidocs/spot/en/#account-information-user_data
+    /// Deserializes cross margin Account data
+    /// https://binance-docs.github.io/apidocs/spot/en/#query-cross-margin-account-details-user_data
     /// </summary>
-    public class SpotAccountConverter : JsonConverter
+    public class MarginAccountConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
             => typeof(AccountInformation).IsAssignableFrom(objectType);
 
-        /// <summary>Reads the JSON representation of the spot account data and asset balances.</summary>
+        /// <summary>Reads the JSON representation of the margin account data and asset balances.</summary>
         /// <param name="reader">The <see cref="T:Newtonsoft.Json.JsonReader" /> to read from.</param>
         /// <param name="objectType">Type of the object.</param>
         /// <param name="existingValue">The existing value of object being read.</param>
@@ -37,7 +37,7 @@ namespace QuantConnect.BinanceBrokerage.Messages
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             JObject token = JObject.Load(reader);
-            var balances = token.GetValue("balances", StringComparison.OrdinalIgnoreCase).ToObject<SpotBalance[]>();
+            var balances = token.GetValue("userAssets", StringComparison.OrdinalIgnoreCase).ToObject<MarginBalance[]>();
             if (balances == null)
             {
                 throw new ArgumentException("userAssets parameter name is not specified.");
@@ -48,7 +48,6 @@ namespace QuantConnect.BinanceBrokerage.Messages
                 Balances = balances
             };
         }
-
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
