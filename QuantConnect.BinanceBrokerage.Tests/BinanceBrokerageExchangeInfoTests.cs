@@ -14,22 +14,30 @@
 */
 
 using NUnit.Framework;
+using QuantConnect.Logging;
+using QuantConnect.ToolBox.BinanceDownloader;
+using System;
+using System.Linq;
 
-namespace QuantConnect.TemplateBrokerage.Tests
+namespace QuantConnect.Tests.Brokerages.Binance
 {
-    [TestFixture, Ignore("Not implemented")]
-    public class TemplateBrokerageSymbolMapperTests
+    [TestFixture]
+    public class BinanceBrokerageExchangeInfoTests
     {
         [Test]
-        public void ReturnsCorrectLeanSymbol()
+        public void GetsExchangeInfo()
         {
+            var downloader = new BinanceExchangeInfoDownloader();
+            var tickers = downloader.Get().ToList();
 
-        }
+            Assert.IsTrue(tickers.Any());
 
-        [Test]
-        public void ReturnsCorrectBrokerageSymbol()
-        {
+            foreach (var t in tickers)
+            {
+                Assert.IsTrue(t.StartsWith(Market.Binance, StringComparison.OrdinalIgnoreCase));
+            }
 
+            Log.Trace("Tickers retrieved: " + tickers.Count);
         }
     }
 }

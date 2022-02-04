@@ -3,16 +3,16 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <TargetFramework>net5.0</TargetFramework>
-    <Product>QuantConnect.TemplateBrokerage</Product>
-    <AssemblyName>QuantConnect.TemplateBrokerage</AssemblyName>
-    <RootNamespace>QuantConnect.TemplateBrokerage</RootNamespace>
-    <AssemblyTitle>QuantConnect.TemplateBrokerage</AssemblyTitle>
+    <Product>QuantConnect.BinanceBrokerage</Product>
+    <AssemblyName>QuantConnect.BinanceBrokerage</AssemblyName>
+    <RootNamespace>QuantConnect.BinanceBrokerage</RootNamespace>
+    <AssemblyTitle>QuantConnect.BinanceBrokerage</AssemblyTitle>
     <OutputType>Library</OutputType>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <Description>QuantConnect LEAN Template Brokerage: Brokerage Template plugin for Lean</Description>
+    <Description>QuantConnect LEAN Binance Brokerage: Brokerage Binance plugin for Lean</Description>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugType>full</DebugType>

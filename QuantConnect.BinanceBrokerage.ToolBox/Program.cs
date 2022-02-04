@@ -17,7 +17,7 @@ using QuantConnect.ToolBox;
 using QuantConnect.Configuration;
 using static QuantConnect.Configuration.ApplicationParser;
 
-namespace QuantConnect.TemplateBrokerage.ToolBox
+namespace QuantConnect.BinanceBrokerage.ToolBox
 {
     static class Program
     {
@@ -37,11 +37,11 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
             var targetAppName = targetApp.ToString();
             if (targetAppName.Contains("download") || targetAppName.Contains("dl"))
             {
-                var downloader = new TemplateBrokerageDownloader();
+                var downloader = new BinanceBrokerageDownloader();
             }
             else if (targetAppName.Contains("updater") || targetAppName.EndsWith("spu"))
             {
-                new ExchangeInfoUpdater(new TemplateExchangeInfoDownloader())
+                new ExchangeInfoUpdater(new BinanceExchangeInfoDownloader())
                     .Run();
             }
             else

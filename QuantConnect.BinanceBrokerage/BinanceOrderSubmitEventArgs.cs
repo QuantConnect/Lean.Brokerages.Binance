@@ -13,28 +13,34 @@
  * limitations under the License.
 */
 
-using QuantConnect.ToolBox;
-using System.Collections.Generic;
+using QuantConnect.Orders;
 
-namespace QuantConnect.TemplateBrokerage.ToolBox
+namespace QuantConnect.BinanceBrokerage
 {
     /// <summary>
-    /// Template Brokerage implementation of <see cref="IExchangeInfoDownloader"/>
+    /// Represents a binance submit order event data
     /// </summary>
-    public class TemplateExchangeInfoDownloader : IExchangeInfoDownloader
+    public class BinanceOrderSubmitEventArgs
     {
         /// <summary>
-        /// Market
+        /// Order Event Constructor.
         /// </summary>
-        public string Market => throw new System.NotImplementedException();
+        /// <param name="brokerId">Binance order id returned from brokerage</param>
+        /// <param name="order">Order for this order placement</param>
+        public BinanceOrderSubmitEventArgs(string brokerId, Order order)
+        {
+            BrokerId = brokerId;
+            Order = order;
+        }
 
         /// <summary>
-        /// Get exchange info coma-separated data
+        /// Original brokerage id
         /// </summary>
-        /// <returns>Enumerable of exchange info for this market</returns>
-        public IEnumerable<string> Get()
-        {
-            throw new System.NotImplementedException();
-        }
+        public string BrokerId { get; set; }
+
+        /// <summary>
+        /// The lean order
+        /// </summary>
+        public Order Order { get; set; }
     }
 }

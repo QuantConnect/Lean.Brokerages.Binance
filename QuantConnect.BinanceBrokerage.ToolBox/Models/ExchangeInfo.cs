@@ -11,22 +11,17 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
 */
 
-using NUnit.Framework;
-using QuantConnect.Util;
-using QuantConnect.Interfaces;
-
-namespace QuantConnect.TemplateBrokerage.Tests
+namespace QuantConnect.ToolBox.BinanceDownloader.Models
 {
-    [TestFixture]
-    public class TemplateBrokerageAdditionalTests
+    /// <summary>
+    /// Represents Binance exchange info response
+    /// https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#exchange-information
+    /// </summary>
+    public class ExchangeInfo
     {
-        [Test]
-        public void ParameterlessConstructorComposerUsage()
-        {
-            var brokerage = Composer.Instance.GetExportedValueByTypeName<IDataQueueHandler>("TemplateBrokerage");
-            Assert.IsNotNull(brokerage);
-        }
+        public Symbol[] Symbols { get; set; }
     }
 }
