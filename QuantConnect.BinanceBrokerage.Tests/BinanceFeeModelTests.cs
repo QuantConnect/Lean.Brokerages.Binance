@@ -21,6 +21,7 @@ using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
 using QuantConnect.Securities;
 using System;
+using QuantConnect.Tests.Brokerages;
 
 namespace QuantConnect.BinanceBrokerage.Tests
 {

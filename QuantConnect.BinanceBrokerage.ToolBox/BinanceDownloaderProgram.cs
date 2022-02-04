@@ -21,6 +21,7 @@ using QuantConnect.Logging;
 using QuantConnect.Data.Market;
 using System.Collections.Generic;
 using QuantConnect.Configuration;
+using QuantConnect.ToolBox;
 
 namespace QuantConnect.BinanceBrokerage.ToolBox
 {

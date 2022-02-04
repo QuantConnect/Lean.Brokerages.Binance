@@ -27,6 +27,7 @@ using QuantConnect.Orders;
 using QuantConnect.Logging;
 using System.Threading;
 using QuantConnect.Lean.Engine.DataFeeds;
+using QuantConnect.Tests.Brokerages;
 
 namespace QuantConnect.BinanceBrokerage.Tests
 {

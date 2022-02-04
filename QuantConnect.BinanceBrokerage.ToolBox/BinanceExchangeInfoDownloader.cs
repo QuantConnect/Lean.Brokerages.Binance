@@ -14,7 +14,8 @@
 */
 
 using Newtonsoft.Json;
-using QuantConnect.ToolBox.BinanceDownloader.Models;
+using QuantConnect.BinanceBrokerage.ToolBox.Models;
+using QuantConnect.ToolBox;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;

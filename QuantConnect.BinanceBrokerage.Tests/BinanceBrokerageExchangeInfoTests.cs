@@ -15,7 +15,7 @@
 
 using NUnit.Framework;
 using QuantConnect.Logging;
-using QuantConnect.ToolBox.BinanceDownloader;
+using QuantConnect.BinanceBrokerage.ToolBox;
 using System;
 using System.Linq;
 
