@@ -28,6 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using QuantConnect.Brokerages;
 using Timer = System.Timers.Timer;
 
 namespace QuantConnect.BinanceBrokerage

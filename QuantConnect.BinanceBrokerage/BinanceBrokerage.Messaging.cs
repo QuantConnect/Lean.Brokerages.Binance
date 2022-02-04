@@ -22,6 +22,7 @@ using QuantConnect.Securities;
 using System;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using QuantConnect.Brokerages;
 using QuantConnect.Data;
 
 namespace QuantConnect.BinanceBrokerage

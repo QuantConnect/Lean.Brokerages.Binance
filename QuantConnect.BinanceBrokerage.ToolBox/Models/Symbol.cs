@@ -17,7 +17,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace QuantConnect.ToolBox.BinanceDownloader.Models
+namespace QuantConnect.BinanceBrokerage.ToolBox.Models
 {
     /// <summary>
     /// Represents Binance exchange info for symbol

@@ -14,6 +14,7 @@
 */
 
 using System;
+using QuantConnect.Brokerages;
 
 namespace QuantConnect.BinanceBrokerage
 {

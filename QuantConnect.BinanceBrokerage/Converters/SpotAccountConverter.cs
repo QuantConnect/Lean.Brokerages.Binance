@@ -16,6 +16,7 @@
 using Newtonsoft.Json;
 using System;
 using Newtonsoft.Json.Linq;
+using QuantConnect.BinanceBrokerage.Messages;
 
 namespace QuantConnect.BinanceBrokerage.Converters
 {

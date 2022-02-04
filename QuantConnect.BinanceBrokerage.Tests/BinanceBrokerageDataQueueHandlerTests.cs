@@ -14,12 +14,9 @@
 */
 
 using NUnit.Framework;
-using QuantConnect.BinanceBrokerage;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
-using QuantConnect.Interfaces;
 using QuantConnect.Logging;
-using QuantConnect.Util;
 using System.Threading;
 
 namespace QuantConnect.BinanceBrokerage.Tests

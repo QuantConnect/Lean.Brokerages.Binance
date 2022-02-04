@@ -16,14 +16,13 @@
 using Moq;
 using NUnit.Framework;
 using QuantConnect.Brokerages;
-using QuantConnect.BinanceBrokerage;
 using QuantConnect.Configuration;
 using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Securities;
 using QuantConnect.Tests.Common.Securities;
-using System;
 using QuantConnect.Util;
+using System;
 
 namespace QuantConnect.BinanceBrokerage.Tests
 {

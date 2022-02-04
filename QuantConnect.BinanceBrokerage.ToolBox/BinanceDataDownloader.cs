@@ -14,18 +14,17 @@
 */
 
 using NodaTime;
-using QuantConnect.BinanceBrokerage;
+using QuantConnect.Brokerages;
+using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Securities;
+using QuantConnect.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using QuantConnect.Brokerages;
-using QuantConnect.Configuration;
-using QuantConnect.Util;
 
-namespace QuantConnect.ToolBox.BinanceDownloader
+namespace QuantConnect.BinanceBrokerage.ToolBox
 {
     /// <summary>
     /// Binance Downloader class

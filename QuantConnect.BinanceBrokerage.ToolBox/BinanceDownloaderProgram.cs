@@ -22,7 +22,7 @@ using QuantConnect.Data.Market;
 using System.Collections.Generic;
 using QuantConnect.Configuration;
 
-namespace QuantConnect.ToolBox.BinanceDownloader
+namespace QuantConnect.BinanceBrokerage.ToolBox
 {
     public static class BinanceDownloaderProgram
     {

@@ -29,6 +29,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using QuantConnect.BinanceBrokerage.Messages;
+using QuantConnect.Brokerages;
 using Order = QuantConnect.Orders.Order;
 
 namespace QuantConnect.BinanceBrokerage

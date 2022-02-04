@@ -14,9 +14,6 @@
 */
 
 using Newtonsoft.Json;
-using QuantConnect.Orders;
-using System;
-using System.Globalization;
 
 namespace QuantConnect.BinanceBrokerage.Messages
 {

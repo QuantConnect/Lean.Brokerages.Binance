@@ -14,14 +14,11 @@
 */
 
 using Newtonsoft.Json;
-using QuantConnect.Orders;
-using System;
-using System.Globalization;
 
 namespace QuantConnect.BinanceBrokerage.Messages
 {
 #pragma warning disable 1591
-    
+
     public class Trade : BaseMessage
     {
         public override EventType @Event => EventType.Trade;

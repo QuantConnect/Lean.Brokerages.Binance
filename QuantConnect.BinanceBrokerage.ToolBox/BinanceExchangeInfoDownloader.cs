@@ -20,7 +20,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 
-namespace QuantConnect.ToolBox.BinanceDownloader
+namespace QuantConnect.BinanceBrokerage.ToolBox
 {
     /// <summary>
     /// Binance implementation of <see cref="IExchangeInfoDownloader"/>

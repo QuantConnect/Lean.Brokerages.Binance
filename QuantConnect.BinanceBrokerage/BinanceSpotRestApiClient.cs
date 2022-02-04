@@ -14,7 +14,9 @@
 */
 
 using Newtonsoft.Json;
+using QuantConnect.BinanceBrokerage.Converters;
 using QuantConnect.BinanceBrokerage.Messages;
+using QuantConnect.Brokerages;
 using QuantConnect.Securities;
 
 namespace QuantConnect.BinanceBrokerage
