@@ -15,15 +15,15 @@
 
 using NodaTime;
 using NUnit.Framework;
-using QuantConnect.BinanceBrokerage;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
+using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Lean.Engine.HistoricalData;
 using QuantConnect.Logging;
 using QuantConnect.Securities;
+using QuantConnect.Tests;
 using System;
 using System.Linq;
-using QuantConnect.Lean.Engine.DataFeeds;
 
 namespace QuantConnect.BinanceBrokerage.Tests
 {
