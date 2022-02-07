@@ -160,26 +160,30 @@ namespace QuantConnect.BinanceBrokerage
             List<Order> list = new List<Order>();
             foreach (var item in orders)
             {
+                var orderQuantity = item.Quantity;
+                var orderLeanSymbol = _symbolMapper.GetLeanSymbol(item.Symbol, SecurityType.Crypto, Market.Binance);
+                var orderTime = Time.UnixMillisecondTimeStampToDateTime(item.Time);
+
                 Order order;
                 switch (item.Type.LazyToUpper())
                 {
                     case "MARKET":
-                        order = new MarketOrder { Price = item.Price };
+                        order = new MarketOrder(orderLeanSymbol, orderQuantity, orderTime);
                         break;
 
                     case "LIMIT":
                     case "LIMIT_MAKER":
-                        order = new LimitOrder { LimitPrice = item.Price };
+                        order = new LimitOrder(orderLeanSymbol, orderQuantity, item.Price, orderTime);
                         break;
 
                     case "STOP_LOSS":
                     case "TAKE_PROFIT":
-                        order = new StopMarketOrder { StopPrice = item.StopPrice, Price = item.Price };
+                        order = new StopMarketOrder(orderLeanSymbol, orderQuantity, item.StopPrice, orderTime);
                         break;
 
                     case "STOP_LOSS_LIMIT":
                     case "TAKE_PROFIT_LIMIT":
-                        order = new StopLimitOrder { StopPrice = item.StopPrice, LimitPrice = item.Price };
+                        order = new StopLimitOrder(orderLeanSymbol, orderQuantity, item.StopPrice, item.Price, orderTime);
                         break;
 
                     default:
@@ -188,12 +192,8 @@ namespace QuantConnect.BinanceBrokerage
                         continue;
                 }
 
-                order.Quantity = item.Quantity;
-                order.BrokerId = new List<string> { item.Id };
-                order.Symbol = _symbolMapper.GetLeanSymbol(item.Symbol, SecurityType.Crypto, Market.Binance);
-                order.Time = Time.UnixMillisecondTimeStampToDateTime(item.Time);
+                order.BrokerId.Add(item.Id);
                 order.Status = ConvertOrderStatus(item.Status);
-                order.Price = item.Price;
 
                 if (order.Status.IsOpen())
                 {
