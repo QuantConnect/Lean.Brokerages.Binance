@@ -276,8 +276,10 @@ namespace QuantConnect.BinanceBrokerage
             }
 
             var period = request.Resolution.ToTimeSpan();
-
-            foreach (var kline in ApiClient.GetHistory(request))
+            var restApiClient = _apiClientLazy?.IsValueCreated == true
+                ? ApiClient
+                : new BinanceSpotRestApiClient(_symbolMapper, null, null, null, Config.Get("binance-api-url", "https://api.binance.com"));
+            foreach (var kline in restApiClient.GetHistory(request))
             {
                 yield return new TradeBar()
                 {
