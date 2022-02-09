@@ -75,7 +75,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
                                        false,
                                        false,
                                        DataNormalizationMode.Adjusted,
-                                       TickType.Quote)
+                                       TickType.Trade)
                 };
 
                 var history = historyProvider.GetHistory(requests, TimeZones.Utc);
@@ -112,7 +112,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
 
         [Test]
         [TestCaseSource(nameof(NoHistory))]
-        public void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period)
+        public void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
         {
             TestDelegate test = () =>
             {
@@ -137,7 +137,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
                                        false,
                                        false,
                                        DataNormalizationMode.Adjusted,
-                                       TickType.Quote)
+                                       tickType)
                 };
 
                 var history = historyProvider.GetHistory(requests, TimeZones.Utc).ToList();
@@ -169,8 +169,9 @@ namespace QuantConnect.BinanceBrokerage.Tests
             {
                 return new[]
                 {
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Tick, TimeSpan.FromSeconds(15)),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Second, Time.OneMinute),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Tick, TimeSpan.FromSeconds(15), TickType.Trade),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Second, Time.OneMinute, TickType.Trade),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Minute, Time.OneHour, TickType.Quote),
                 };
             }
         }
