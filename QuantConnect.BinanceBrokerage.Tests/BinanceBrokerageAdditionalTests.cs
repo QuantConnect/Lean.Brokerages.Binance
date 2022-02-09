@@ -26,7 +26,7 @@ using System;
 
 namespace QuantConnect.BinanceBrokerage.Tests
 {
-    [TestFixture, Explicit("This test requires a configured and testable Binance practice account")]
+    [TestFixture]
     public class BinanceBrokerageAdditionalTests
     {
         [Test]
