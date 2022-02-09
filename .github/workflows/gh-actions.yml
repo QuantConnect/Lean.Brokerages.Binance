@@ -8,8 +8,8 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     env:
-        QC_BINANCE_BROKERAGE_KEY: ${{ secrets.QC_BINANCE_BROKERAGE_KEY }}
-        QC_BINANCE_BROKERAGE_SECRET: ${{ secrets.QC_BINANCE_BROKERAGE_SECRET }}
+      QC_BINANCE_BROKERAGE_KEY: ${{ secrets.QC_BINANCE_BROKERAGE_KEY }}
+      QC_BINANCE_BROKERAGE_SECRET: ${{ secrets.QC_BINANCE_BROKERAGE_SECRET }}
     container:
         image: quantconnect/lean:foundation
     steps:
