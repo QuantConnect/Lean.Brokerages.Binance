@@ -1,4 +1,4 @@
-﻿/*
+/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  *
@@ -13,20 +13,13 @@
  * limitations under the License.
 */
 
-using NUnit.Framework;
-using QuantConnect.Util;
-using QuantConnect.Interfaces;
-
-namespace QuantConnect.TemplateBrokerage.Tests
+namespace QuantConnect.BinanceBrokerage.Messages
 {
-    [TestFixture]
-    public class TemplateBrokerageAdditionalTests
+#pragma warning disable 1591
+    public class PriceTicker
     {
-        [Test]
-        public void ParameterlessConstructorComposerUsage()
-        {
-            var brokerage = Composer.Instance.GetExportedValueByTypeName<IDataQueueHandler>("TemplateBrokerage");
-            Assert.IsNotNull(brokerage);
-        }
+        public string Symbol { get; set; }
+        public decimal Price { get; set; }
     }
+#pragma warning restore 1591
 }

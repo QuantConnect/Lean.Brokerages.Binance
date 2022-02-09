@@ -14,24 +14,32 @@
 */
 
 using System;
-using QuantConnect.Data;
-using System.Collections.Generic;
+using QuantConnect.Brokerages;
 
-namespace QuantConnect.TemplateBrokerage.ToolBox
+namespace QuantConnect.BinanceBrokerage
 {
     /// <summary>
-    /// Template Brokerage Data Downloader implementation
+    /// Wrapper class for a Binance websocket connection
     /// </summary>
-    public class TemplateBrokerageDownloader : IDataDownloader
+    public class BinanceWebSocketWrapper : WebSocketClientWrapper
     {
         /// <summary>
-        /// Get historical data enumerable for a single symbol, type and resolution given this start and end time (in UTC).
+        /// The unique Id for the connection
         /// </summary>
-        /// <param name="dataDownloaderGetParameters">model class for passing in parameters for historical data</param>
-        /// <returns>Enumerable of base data for this symbol</returns>
-        public IEnumerable<BaseData> Get(DataDownloaderGetParameters dataDownloaderGetParameters)
+        public string ConnectionId { get; }
+
+        /// <summary>
+        /// The handler for the connection
+        /// </summary>
+        public IConnectionHandler ConnectionHandler { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinanceWebSocketWrapper"/> class.
+        /// </summary>
+        public BinanceWebSocketWrapper(IConnectionHandler connectionHandler)
         {
-            throw new NotImplementedException();
+            ConnectionId = Guid.NewGuid().ToString();
+            ConnectionHandler = connectionHandler;
         }
     }
 }

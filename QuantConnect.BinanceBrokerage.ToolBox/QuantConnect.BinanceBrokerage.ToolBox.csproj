@@ -7,14 +7,14 @@
         <TargetFramework>net5.0</TargetFramework>
         <Copyright>Copyright ©  2021</Copyright>
         <OutputPath>bin\$(Configuration)\</OutputPath>
-        <Product>QuantConnect.TemplateBrokerage.ToolBox</Product>
-        <AssemblyName>QuantConnect.TemplateBrokerage.ToolBox</AssemblyName>
-        <RootNamespace>QuantConnect.TemplateBrokerage.ToolBox</RootNamespace>
-        <AssemblyTitle>QuantConnect.TemplateBrokerage.ToolBox</AssemblyTitle>
+        <Product>QuantConnect.BinanceBrokerage.ToolBox</Product>
+        <AssemblyName>QuantConnect.BinanceBrokerage.ToolBox</AssemblyName>
+        <RootNamespace>QuantConnect.BinanceBrokerage.ToolBox</RootNamespace>
+        <AssemblyTitle>QuantConnect.BinanceBrokerage.ToolBox</AssemblyTitle>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-        <Description>QuantConnect LEAN Template Brokerage: Brokerage Template toolbox plugin for Lean</Description>
+        <Description>QuantConnect LEAN Binance Brokerage: Brokerage Binance toolbox plugin for Lean</Description>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>full</DebugType>
@@ -28,7 +28,9 @@
         <Compile Include="..\..\Lean\Common\Properties\SharedAssemblyInfo.cs" Link="Properties\SharedAssemblyInfo.cs" />
     </ItemGroup>
     <ItemGroup>
-      <ProjectReference Include="..\..\Lean\Common\QuantConnect.csproj" />
-      <ProjectReference Include="..\..\Lean\ToolBox\QuantConnect.ToolBox.csproj" />
+        <ProjectReference Include="..\QuantConnect.BinanceBrokerage\QuantConnect.BinanceBrokerage.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="QuantConnect.ToolBox" Version="2.5.*" />
     </ItemGroup>
 </Project>

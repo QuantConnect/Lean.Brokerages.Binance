@@ -1,4 +1,4 @@
-﻿/*
+/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  *
@@ -13,23 +13,25 @@
  * limitations under the License.
 */
 
-using NUnit.Framework;
+using Newtonsoft.Json;
 
-namespace QuantConnect.TemplateBrokerage.Tests
+namespace QuantConnect.BinanceBrokerage.Messages
 {
-    [TestFixture, Ignore("Not implemented")]
-    public class TemplateBrokerageSymbolMapperTests
+#pragma warning disable 1591
+
+    public class BaseMessage
     {
-        [Test]
-        public void ReturnsCorrectLeanSymbol()
-        {
+        public virtual EventType @Event { get; } = EventType.None;
 
-        }
+        [JsonProperty("e")]
+        public string EventName { get; set; }
 
-        [Test]
-        public void ReturnsCorrectBrokerageSymbol()
-        {
+        [JsonProperty("E")]
+        public long Time { get; set; }
 
-        }
+        [JsonProperty("s")]
+        public string Symbol { get; set; }
     }
+    
+#pragma warning restore 1591
 }

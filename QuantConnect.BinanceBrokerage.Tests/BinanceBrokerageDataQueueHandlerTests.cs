@@ -1,11 +1,11 @@
-﻿/*
+/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); 
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,17 +14,18 @@
 */
 
 using NUnit.Framework;
-using System.Threading;
 using QuantConnect.Data;
-using QuantConnect.Tests;
-using QuantConnect.Logging;
 using QuantConnect.Data.Market;
+using QuantConnect.Logging;
+using System.Threading;
 
-namespace QuantConnect.TemplateBrokerage.Tests
+namespace QuantConnect.BinanceBrokerage.Tests
 {
     [TestFixture]
-    public partial class TemplateBrokerageTests
+    public partial class BinanceBrokerageTests
     {
+        private static readonly Symbol XRP_USDT = Symbol.Create("XRPUSDT", SecurityType.Crypto, Market.FTX);
+
         private static TestCaseData[] TestParameters
         {
             get
@@ -32,9 +33,9 @@ namespace QuantConnect.TemplateBrokerage.Tests
                 return new[]
                 {
                     // valid parameters, for example
-                    new TestCaseData(Symbols.BTCUSD, Resolution.Tick, false),
-                    new TestCaseData(Symbols.BTCUSD, Resolution.Minute, false),
-                    new TestCaseData(Symbols.BTCUSD, Resolution.Second, false),
+                    new TestCaseData(XRP_USDT, Resolution.Tick, false),
+                    new TestCaseData(XRP_USDT, Resolution.Minute, false),
+                    new TestCaseData(XRP_USDT, Resolution.Second, false),
                 };
             }
         }
@@ -43,26 +44,38 @@ namespace QuantConnect.TemplateBrokerage.Tests
         public void StreamsData(Symbol symbol, Resolution resolution, bool throwsException)
         {
             var cancelationToken = new CancellationTokenSource();
-            var brokerage = (TemplateBrokerage)Brokerage;
+            var brokerage = (BinanceBrokerage)Brokerage;
 
             SubscriptionDataConfig[] configs;
             if (resolution == Resolution.Tick)
             {
-                var tradeConfig = new SubscriptionDataConfig(GetSubscriptionDataConfig<Tick>(symbol, resolution), tickType: TickType.Trade);
-                var quoteConfig = new SubscriptionDataConfig(GetSubscriptionDataConfig<Tick>(symbol, resolution), tickType: TickType.Quote);
+                var tradeConfig = new SubscriptionDataConfig(GetSubscriptionDataConfig<Tick>(symbol, resolution),
+                    tickType: TickType.Trade);
+                var quoteConfig = new SubscriptionDataConfig(GetSubscriptionDataConfig<Tick>(symbol, resolution),
+                    tickType: TickType.Quote);
                 configs = new[] { tradeConfig, quoteConfig };
             }
             else
             {
-                configs = new[] { GetSubscriptionDataConfig<QuoteBar>(symbol, resolution),
-                    GetSubscriptionDataConfig<TradeBar>(symbol, resolution) };
+                configs = new[]
+                {
+                    GetSubscriptionDataConfig<QuoteBar>(symbol, resolution),
+                    GetSubscriptionDataConfig<TradeBar>(symbol, resolution)
+                };
             }
 
             foreach (var config in configs)
             {
-                ProcessFeed(brokerage.Subscribe(config, (s, e) => { }),
+                ProcessFeed(brokerage.Subscribe(config, (s, e) =>
+                    {
+                    }),
                     cancelationToken,
-                    (baseData) => { if (baseData != null) { Log.Trace("{baseData}"); }
+                    (baseData) =>
+                    {
+                        if (baseData != null)
+                        {
+                            Log.Trace("{baseData}");
+                        }
                     });
             }
 
