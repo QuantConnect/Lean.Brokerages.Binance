@@ -31,7 +31,7 @@ using QuantConnect.Tests.Brokerages;
 
 namespace QuantConnect.BinanceBrokerage.Tests
 {
-    [TestFixture, Explicit("This test requires a configured and testable Binance practice account")]
+    [TestFixture]
     public partial class BinanceBrokerageTests : BrokerageTests
     {
         private BinanceBaseRestApiClient _binanceApi;
@@ -138,42 +138,49 @@ namespace QuantConnect.BinanceBrokerage.Tests
         /// </summary>
         protected override decimal GetDefaultQuantity() => 0.01m;
 
+        [Explicit("This test requires a configured and testable Binance practice account")]
         [Test, TestCaseSource(nameof(OrderParameters))]
         public override void CancelOrders(OrderTestParameters parameters)
         {
             base.CancelOrders(parameters);
         }
 
+        [Explicit("This test requires a configured and testable Binance practice account")]
         [Test, TestCaseSource(nameof(OrderParameters))]
         public override void LongFromZero(OrderTestParameters parameters)
         {
             base.LongFromZero(parameters);
         }
 
+        [Explicit("This test requires a configured and testable Binance practice account")]
         [Test, TestCaseSource(nameof(OrderParameters))]
         public override void CloseFromLong(OrderTestParameters parameters)
         {
             base.CloseFromLong(parameters);
         }
 
+        [Explicit("This test requires a configured and testable Binance practice account")]
         [Test, TestCaseSource(nameof(OrderParameters))]
         public override void ShortFromZero(OrderTestParameters parameters)
         {
             base.ShortFromZero(parameters);
         }
 
+        [Explicit("This test requires a configured and testable Binance practice account")]
         [Test, TestCaseSource(nameof(OrderParameters))]
         public override void CloseFromShort(OrderTestParameters parameters)
         {
             base.CloseFromShort(parameters);
         }
 
+        [Explicit("This test requires a configured and testable Binance practice account")]
         [Test, TestCaseSource(nameof(OrderParameters))]
         public override void ShortFromLong(OrderTestParameters parameters)
         {
             base.ShortFromLong(parameters);
         }
 
+        [Explicit("This test requires a configured and testable Binance practice account")]
         [Test, TestCaseSource(nameof(OrderParameters))]
         public override void LongFromShort(OrderTestParameters parameters)
         {
