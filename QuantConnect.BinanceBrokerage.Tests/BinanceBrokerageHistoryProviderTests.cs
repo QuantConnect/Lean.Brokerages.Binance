@@ -15,6 +15,8 @@
 
 using NodaTime;
 using NUnit.Framework;
+using QuantConnect.Brokerages;
+using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Lean.Engine.DataFeeds;
@@ -28,8 +30,23 @@ using System.Linq;
 namespace QuantConnect.BinanceBrokerage.Tests
 {
     [TestFixture]
-    public partial class BinanceBrokerageTests
+    public class BinanceBrokerageHistoryProviderTests
     {
+        private Brokerage _brokerage;
+
+        [OneTimeSetUp]
+        public void Setup()
+        {
+            _brokerage = CreateBrokerage();
+        }
+
+        [OneTimeTearDown]
+        public void TearDown()
+        {
+            _brokerage?.Disconnect();
+            _brokerage?.Dispose();
+        }
+
         [Test]
         [TestCaseSource(nameof(ValidHistory))]
         [TestCaseSource(nameof(InvalidHistory))]
@@ -37,7 +54,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
         {
             TestDelegate test = () =>
             {
-                var brokerage = (BinanceBrokerage)Brokerage;
+                var brokerage = (BinanceBrokerage)_brokerage;
 
                 var historyProvider = new BrokerageHistoryProvider();
                 historyProvider.SetBrokerage(brokerage);
@@ -99,7 +116,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
         {
             TestDelegate test = () =>
             {
-                var brokerage = (BinanceBrokerage)Brokerage;
+                var brokerage = (BinanceBrokerage)_brokerage;
 
                 var historyProvider = new BrokerageHistoryProvider();
                 historyProvider.SetBrokerage(brokerage);
@@ -174,6 +191,24 @@ namespace QuantConnect.BinanceBrokerage.Tests
                     new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), true),
                 };
             }
+        }
+
+        private static Brokerage CreateBrokerage()
+        {
+            var apiKey = Config.Get("binance-api-key");
+            var apiSecret = Config.Get("binance-api-secret");
+            var apiUrl = Config.Get("binance-api-url", "https://api.binance.com");
+            var websocketUrl = Config.Get("binance-websocket-url", "wss://stream.binance.com:9443/ws");
+
+            return new BinanceBrokerage(
+                apiKey,
+                apiSecret,
+                apiUrl,
+                websocketUrl,
+                null,
+                new AggregationManager(),
+                null
+            );
         }
     }
 }
