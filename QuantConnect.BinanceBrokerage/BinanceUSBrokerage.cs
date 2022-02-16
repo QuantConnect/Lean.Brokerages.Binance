@@ -55,7 +55,8 @@ namespace QuantConnect.BinanceBrokerage
                 job.BrokerageData["binanceus-api-secret"],
                 null,
                 aggregator,
-                job
+                job,
+                Market.BinanceUS
             );
         }
     }

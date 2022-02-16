@@ -74,8 +74,8 @@ namespace QuantConnect.BinanceBrokerage
         public override IBrokerage CreateBrokerage(Packets.LiveNodePacket job, IAlgorithm algorithm)
         {
             var errors = new List<string>();
-            var apiKey = Read<string>(job.BrokerageData, "binanceus-api-secret", errors);
-            var apiSecret = Read<string>(job.BrokerageData, "binanceus-api-key", errors);
+            var apiKey = Read<string>(job.BrokerageData, "binanceus-api-key", errors);
+            var apiSecret = Read<string>(job.BrokerageData, "binanceus-api-secret", errors);
             var apiUrl = Read<string>(job.BrokerageData, "binanceus-api-url", errors);
             var wsUrl = Read<string>(job.BrokerageData, "binanceus-websocket-url", errors);
 

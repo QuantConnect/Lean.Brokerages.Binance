@@ -47,7 +47,7 @@ namespace QuantConnect.BinanceBrokerage
     public partial class BinanceBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     {
         private IAlgorithm _algorithm;
-        private readonly SymbolPropertiesDatabaseSymbolMapper _symbolMapper = new SymbolPropertiesDatabaseSymbolMapper(Market.Binance);
+        private SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
 
         // Binance allows 5 messages per second, but we still get rate limited if we send a lot of messages at that rate
         // By sending 3 messages per second, evenly spaced out, we can keep sending messages without being limited
@@ -110,13 +110,14 @@ namespace QuantConnect.BinanceBrokerage
             : base(marketName)
         {
             Initialize(
-                wssUrl: webSocketBaseUrl,
-                restApiUrl: restApiUrl,
-                apiKey: apiKey,
-                apiSecret: apiSecret,
-                algorithm: algorithm,
-                aggregator: aggregator,
-                job: job
+                webSocketBaseUrl,
+                restApiUrl,
+                apiKey,
+                apiSecret,
+                algorithm,
+                aggregator,
+                job,
+                marketName
             );
         }
 
@@ -366,8 +367,9 @@ namespace QuantConnect.BinanceBrokerage
                 apiKey: job.BrokerageData["binance-api-key"],
                 apiSecret: job.BrokerageData["binance-api-secret"],
                 algorithm: null,
-                aggregator: aggregator,
-                job: job
+                aggregator,
+                job,
+                Market.Binance
             );
         }
 
@@ -447,8 +449,9 @@ namespace QuantConnect.BinanceBrokerage
         /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
         /// <param name="aggregator">the aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
+        /// <param name="marketName">market name</param>
         protected void Initialize(string wssUrl, string restApiUrl, string apiKey, string apiSecret,
-            IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job)
+            IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job, string marketName)
         {
             if (IsInitialized)
             {
@@ -460,6 +463,7 @@ namespace QuantConnect.BinanceBrokerage
             _aggregator = aggregator;
             _webSocketBaseUrl = wssUrl;
             _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage);
+            _symbolMapper = new(marketName);
 
             var maximumWebSocketConnections = Config.GetInt("binance-maximum-websocket-connections");
             var symbolWeights = maximumWebSocketConnections > 0 ? FetchSymbolWeights() : null;
