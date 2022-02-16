@@ -67,9 +67,16 @@ namespace QuantConnect.BinanceBrokerage
         private const int MaximumSymbolsPerConnection = 512;
 
         /// <summary>
+        /// Parameterless constructor for brokerage
+        /// </summary>
+        public BinanceBrokerage() : this(Market.Binance)
+        {
+        }
+
+        /// <summary>
         /// Constructor for brokerage
         /// </summary>
-        public BinanceBrokerage() : base("Binance")
+        public BinanceBrokerage(string marketName) : base(marketName)
         {
         }
 
@@ -84,7 +91,23 @@ namespace QuantConnect.BinanceBrokerage
         /// <param name="aggregator">the aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
         public BinanceBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl, IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job)
-            : base("Binance")
+            : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, algorithm, aggregator, job, Market.Binance)
+        {
+        }
+
+        /// <summary>
+        /// Constructor for brokerage
+        /// </summary>
+        /// <param name="apiKey">api key</param>
+        /// <param name="apiSecret">api secret</param>
+        /// <param name="restApiUrl">The rest api url</param>
+        /// <param name="webSocketBaseUrl">The web socket base url</param>
+        /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
+        /// <param name="aggregator">the aggregator for consolidating ticks</param>
+        /// <param name="job">The live job packet</param>
+        /// <param name="marketName">Actual market name</param>
+        public BinanceBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl, IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job, string marketName)
+            : base(marketName)
         {
             Initialize(
                 wssUrl: webSocketBaseUrl,
@@ -324,27 +347,28 @@ namespace QuantConnect.BinanceBrokerage
         /// <param name="job">Job we're subscribing for</param>
         public void SetJob(LiveNodePacket job)
         {
-            var webSocketBaseUrl = job.BrokerageData["binance-websocket-url"];
-            var restApiUrl = job.BrokerageData["binance-api-url"];
-            var apiKey = job.BrokerageData["binance-api-key"];
-            var apiSecret = job.BrokerageData["binance-api-secret"];
             var aggregator = Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(
                 Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"), forceTypeNameOnExisting: false);
 
-            Initialize(
-                wssUrl: webSocketBaseUrl,
-                restApiUrl: restApiUrl,
-                apiKey: apiKey,
-                apiSecret: apiSecret,
-                algorithm: null,
-                aggregator: aggregator,
-                job: job
-            );
+            SetJobInit(job, aggregator);
 
             if (!IsConnected)
             {
                 Connect();
             }
+        }
+
+        protected virtual void SetJobInit(LiveNodePacket job, IDataAggregator aggregator)
+        {
+            Initialize(
+                wssUrl: job.BrokerageData["binance-websocket-url"],
+                restApiUrl: job.BrokerageData["binance-api-url"],
+                apiKey: job.BrokerageData["binance-api-key"],
+                apiSecret: job.BrokerageData["binance-api-secret"],
+                algorithm: null,
+                aggregator: aggregator,
+                job: job
+            );
         }
 
         /// <summary>
@@ -423,7 +447,7 @@ namespace QuantConnect.BinanceBrokerage
         /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
         /// <param name="aggregator">the aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
-        private void Initialize(string wssUrl, string restApiUrl, string apiKey, string apiSecret,
+        protected void Initialize(string wssUrl, string restApiUrl, string apiKey, string apiSecret,
             IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job)
         {
             if (IsInitialized)

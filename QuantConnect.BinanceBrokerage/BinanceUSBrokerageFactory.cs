@@ -27,12 +27,12 @@ namespace QuantConnect.BinanceBrokerage
     /// <summary>
     /// Factory method to create binance Websockets brokerage
     /// </summary>
-    public class BinanceBrokerageFactory : BrokerageFactory
+    public class BinanceUSBrokerageFactory : BrokerageFactory
     {
         /// <summary>
         /// Factory constructor
         /// </summary>
-        public BinanceBrokerageFactory() : base(typeof(BinanceBrokerage))
+        public BinanceUSBrokerageFactory() : base(typeof(BinanceUSBrokerage))
         {
         }
 
@@ -48,12 +48,12 @@ namespace QuantConnect.BinanceBrokerage
         /// </summary>
         public override Dictionary<string, string> BrokerageData => new Dictionary<string, string>
         {
-            { "binance-api-key", Config.Get("binance-api-key")},
-            { "binance-api-secret", Config.Get("binance-api-secret")},
+            { "binanceus-api-key", Config.Get("binanceus-api-key")},
+            { "binanceus-api-secret", Config.Get("binanceus-api-secret")},
             // paper trading available using https://testnet.binance.vision
-            { "binance-api-url", Config.Get("binance-api-url", "https://api.binance.com")},
+            { "binanceus-api-url", Config.Get("binanceus-api-url", "https://api.binance.us")},
             // paper trading available using wss://testnet.binance.vision/ws
-            { "binance-websocket-url", Config.Get("binance-websocket-url", "wss://stream.binance.com:9443/ws")},
+            { "binanceus-websocket-url", Config.Get("binanceus-websocket-url", "wss://stream.binance.us:9443/ws")},
 
             // load holdings if available
             { "live-holdings", Config.Get("live-holdings")},
@@ -63,7 +63,7 @@ namespace QuantConnect.BinanceBrokerage
         /// The brokerage model
         /// </summary>
         /// <param name="orderProvider">The order provider</param>
-        public override IBrokerageModel GetBrokerageModel(IOrderProvider orderProvider) => new BinanceBrokerageModel();
+        public override IBrokerageModel GetBrokerageModel(IOrderProvider orderProvider) => new BinanceUSBrokerageModel();
 
         /// <summary>
         /// Create the Brokerage instance
@@ -74,18 +74,18 @@ namespace QuantConnect.BinanceBrokerage
         public override IBrokerage CreateBrokerage(Packets.LiveNodePacket job, IAlgorithm algorithm)
         {
             var errors = new List<string>();
-            var apiKey = Read<string>(job.BrokerageData, "binance-api-secret", errors);
-            var apiSecret = Read<string>(job.BrokerageData, "binance-api-key", errors);
-            var apiUrl = Read<string>(job.BrokerageData, "binance-api-url", errors);
-            var wsUrl = Read<string>(job.BrokerageData, "binance-websocket-url", errors);
+            var apiKey = Read<string>(job.BrokerageData, "binanceus-api-secret", errors);
+            var apiSecret = Read<string>(job.BrokerageData, "binanceus-api-key", errors);
+            var apiUrl = Read<string>(job.BrokerageData, "binanceus-api-url", errors);
+            var wsUrl = Read<string>(job.BrokerageData, "binanceus-websocket-url", errors);
 
             if (errors.Count != 0)
             {
                 // if we had errors then we can't create the instance
                 throw new ArgumentException(string.Join(Environment.NewLine, errors));
             }
-
-            var brokerage = new BinanceBrokerage(
+            
+            var brokerage = new BinanceUSBrokerage(
                 apiKey,
                 apiSecret,
                 apiUrl,
