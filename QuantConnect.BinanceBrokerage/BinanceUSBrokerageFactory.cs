@@ -25,7 +25,7 @@ using QuantConnect.Util;
 namespace QuantConnect.BinanceBrokerage
 {
     /// <summary>
-    /// Factory method to create binance Websockets brokerage
+    /// Factory method to create Binance.US brokerage
     /// </summary>
     public class BinanceUSBrokerageFactory : BrokerageFactory
     {
@@ -46,7 +46,7 @@ namespace QuantConnect.BinanceBrokerage
         /// <summary>
         /// provides brokerage connection data
         /// </summary>
-        public override Dictionary<string, string> BrokerageData => new Dictionary<string, string>
+        public override Dictionary<string, string> BrokerageData => new()
         {
             { "binanceus-api-key", Config.Get("binanceus-api-key")},
             { "binanceus-api-secret", Config.Get("binanceus-api-secret")},

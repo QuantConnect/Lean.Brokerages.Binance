@@ -46,13 +46,13 @@ namespace QuantConnect.BinanceBrokerage
         {
         }
 
-        protected virtual void SetJobInit(LiveNodePacket job, IDataAggregator aggregator)
+        protected override void SetJobInit(LiveNodePacket job, IDataAggregator aggregator)
         {
             Initialize(
                 job.BrokerageData["binanceus-websocket-url"],
                 job.BrokerageData["binanceus-api-url"],
                 job.BrokerageData["binanceus-api-key"],
-                job.BrokerageData["binance-api-secret"],
+                job.BrokerageData["binanceus-api-secret"],
                 null,
                 aggregator,
                 job
