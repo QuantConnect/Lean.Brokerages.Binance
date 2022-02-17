@@ -19,7 +19,6 @@ using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Securities;
-using QuantConnect.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,22 +26,22 @@ using System.Linq;
 namespace QuantConnect.BinanceBrokerage.ToolBox
 {
     /// <summary>
-    /// Binance Downloader class
+    /// BinanceUS Downloader class
     /// </summary>
-    public class BinanceDataDownloader : BaseDataDownloader
+    public class BinanceUSDataDownloader : BaseDataDownloader
     {
-        protected override string MarketName => Market.Binance;
+        protected override string MarketName => Market.BinanceUS;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BinanceDataDownloader"/> class
         /// </summary>
-        public BinanceDataDownloader()
+        public BinanceUSDataDownloader()
         {
-            var apiUrl = Config.Get("binance-api-url", "https://api.binance.com");
-            var websocketUrl = Config.Get("binance-websocket-url", "wss://stream.binance.com:9443/ws");
-            Brokerage = new BinanceBrokerage(null, null, apiUrl, websocketUrl, null, null, null);
+            var apiUrl = Config.Get("binanceus-api-url", "https://api.binance.us");
+            var websocketUrl = Config.Get("binanceus-websocket-url", "wss://stream.binance.us:9443/ws");
+            Brokerage = new BinanceUSBrokerage(null, null, apiUrl, websocketUrl, null, null, null);
 
-            SymbolMapper = new(Market.Binance);
+            SymbolMapper = new(Market.BinanceUS);
         }
     }
 }

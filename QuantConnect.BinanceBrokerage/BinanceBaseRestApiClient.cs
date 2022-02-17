@@ -96,8 +96,14 @@ namespace QuantConnect.BinanceBrokerage
         /// <param name="restApiUrl">The Binance API rest url</param>
         /// <param name="restApiPrefix">REST API path prefix depending on SPOT or CROSS MARGIN trading</param>
         /// <param name="wsApiPrefix">REST API path prefix for user data streaming auth process depending on SPOT or CROSS MARGIN trading</param>
-        public BinanceBaseRestApiClient(SymbolPropertiesDatabaseSymbolMapper symbolMapper, ISecurityProvider securityProvider,
-            string apiKey, string apiSecret, string restApiUrl, string restApiPrefix, string wsApiPrefix)
+        public BinanceBaseRestApiClient(
+            SymbolPropertiesDatabaseSymbolMapper symbolMapper,
+            ISecurityProvider securityProvider,
+            string apiKey,
+            string apiSecret,
+            string restApiUrl,
+            string restApiPrefix,
+            string wsApiPrefix)
         {
             _symbolMapper = symbolMapper;
             _securityProvider = securityProvider;
@@ -334,8 +340,13 @@ namespace QuantConnect.BinanceBrokerage
             var symbol = _symbolMapper.GetBrokerageSymbol(request.Symbol);
             var startMs = (long)Time.DateTimeToUnixTimeStamp(request.StartTimeUtc) * 1000;
             var endMs = (long)Time.DateTimeToUnixTimeStamp(request.EndTimeUtc) * 1000;
-            // we always use the real endpoint for history requests
-            var endpoint = $"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={resolution}&limit=1000";
+
+            var endpoint = $"/api/v3/klines?symbol={symbol}&interval={resolution}&limit=1000";
+            if (_restClient?.BaseHost?.Equals("https://testnet.binance.vision") == true)
+            {
+                // we always use the real endpoint for history requests
+                endpoint = "https://api.binance.com" + endpoint;
+            }
 
             while (endMs - startMs >= resolutionInMs)
             {

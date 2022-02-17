@@ -43,7 +43,7 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
             }
 
             var targetAppName = targetApp?.ToString() ?? throw new ArgumentNullException(nameof(targetApp));
-            if (targetAppName.Contains("download") || targetAppName.Contains("dl"))
+            if (targetAppName.Contains("downloader") || targetAppName.Contains("dl"))
             {
                 var fromDate = Parse.DateTimeExact(GetParameterOrExit(optionsObject, "from-date"), "yyyyMMdd-HH:mm:ss");
                 var toDate = optionsObject.ContainsKey("to-date")
@@ -51,16 +51,37 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
                     : DateTime.UtcNow;
                 var resolution = optionsObject.ContainsKey("resolution") ? optionsObject["resolution"].ToString() : "";
                 var tickers = ToolboxArgumentParser.GetTickers(optionsObject);
-                
-                DataDownloader(
+
+                BaseDataDownloader dataDownloader;
+                if (targetAppName.Equals("binanceusdownloader") || targetAppName.Equals("mbxusdl"))
+                {
+                    dataDownloader = new BinanceUSDataDownloader();
+                }
+                else
+                {
+                    dataDownloader = new BinanceDataDownloader();
+                }
+                DownloadData(
+                    dataDownloader,
                     tickers,
                     resolution,
                     fromDate,
                     toDate);
+                dataDownloader.DisposeSafely();
             }
             else if (targetAppName.Contains("updater") || targetAppName.EndsWith("spu"))
             {
-                ExchangeInfoDownloader();
+                BinanceExchangeInfoDownloader exchangeInfoDownloader;
+                if (targetAppName.Equals("binanceussymbolpropertiesupdater") || targetAppName.Equals("mbxusspu"))
+                {
+                    exchangeInfoDownloader = new BinanceExchangeInfoDownloader(Market.BinanceUS, "https://api.binance.us");
+                }
+                else
+                {
+                    exchangeInfoDownloader = new BinanceExchangeInfoDownloader(Market.Binance, "https://api.binance.com");
+                }
+
+                ExchangeInfoDownloader(exchangeInfoDownloader);
             }
             else
             {
@@ -71,7 +92,7 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
         /// <summary>
         /// Primary entry point to the program.
         /// </summary>
-        public static void DataDownloader(IList<string> tickers, string resolution, DateTime fromDate, DateTime toDate)
+        public static void DownloadData(BaseDataDownloader downloader, IList<string> tickers, string resolution, DateTime fromDate, DateTime toDate)
         {
             if (resolution.IsNullOrEmpty() || tickers.IsNullOrEmpty())
             {
@@ -88,33 +109,29 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
                 // Load settings from config.json
                 var dataDirectory = Config.Get("data-folder", "../../../Data");
 
-                using (var downloader = new BinanceDataDownloader())
+                foreach (var ticker in tickers)
                 {
-                    foreach (var ticker in tickers)
+                    // Download the data
+                    var symbol = downloader.GetSymbol(ticker);
+                    var data = downloader.Get(new DataDownloaderGetParameters(symbol, castResolution, fromDate, toDate));
+                    var bars = data.Cast<TradeBar>().ToList();
+
+                    // Save the data (single resolution)
+                    var writer = new LeanDataWriter(castResolution, symbol, dataDirectory);
+                    writer.Write(bars);
+
+                    if (allResolutions)
                     {
-                        // Download the data
-                        var symbol = downloader.GetSymbol(ticker);
-                        var data = downloader.Get(new DataDownloaderGetParameters(symbol, castResolution, fromDate, toDate));
-                        var bars = data.Cast<TradeBar>().ToList();
-
-                        // Save the data (single resolution)
-                        var writer = new LeanDataWriter(castResolution, symbol, dataDirectory);
-                        writer.Write(bars);
-
-                        if (allResolutions)
+                        // Save the data (other resolutions)
+                        foreach (var res in new[] { Resolution.Hour, Resolution.Daily })
                         {
-                            // Save the data (other resolutions)
-                            foreach (var res in new[] { Resolution.Hour, Resolution.Daily })
-                            {
-                                var resData = LeanData.AggregateTradeBars(bars, symbol, res.ToTimeSpan());
+                            var resData = LeanData.AggregateTradeBars(bars, symbol, res.ToTimeSpan());
 
-                                writer = new LeanDataWriter(res, symbol, dataDirectory);
-                                writer.Write(resData);
-                            }
+                            writer = new LeanDataWriter(res, symbol, dataDirectory);
+                            writer.Write(resData);
                         }
                     }
                 }
-
             }
             catch (Exception err)
             {
@@ -125,9 +142,9 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
         /// <summary>
         /// Endpoint for downloading exchange info
         /// </summary>
-        public static void ExchangeInfoDownloader()
+        public static void ExchangeInfoDownloader(IExchangeInfoDownloader exchangeInfoDownloader)
         {
-            new ExchangeInfoUpdater(new BinanceExchangeInfoDownloader())
+            new ExchangeInfoUpdater(exchangeInfoDownloader)
                 .Run();
         }
     }
