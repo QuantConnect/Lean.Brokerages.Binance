@@ -45,7 +45,7 @@ namespace QuantConnect.BinanceBrokerage
 
         private string UserDataStreamEndpoint => $"{_wsPrefix}/userDataStream";
 
-        private readonly SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
+        private readonly ISymbolMapper _symbolMapper;
         private readonly ISecurityProvider _securityProvider;
         private readonly IRestClient _restClient;
         private readonly RateGate _restRateLimiter = new(10, TimeSpan.FromSeconds(1));
@@ -97,7 +97,7 @@ namespace QuantConnect.BinanceBrokerage
         /// <param name="restApiPrefix">REST API path prefix depending on SPOT or CROSS MARGIN trading</param>
         /// <param name="wsApiPrefix">REST API path prefix for user data streaming auth process depending on SPOT or CROSS MARGIN trading</param>
         public BinanceBaseRestApiClient(
-            SymbolPropertiesDatabaseSymbolMapper symbolMapper,
+            ISymbolMapper symbolMapper,
             ISecurityProvider securityProvider,
             string apiKey,
             string apiSecret,

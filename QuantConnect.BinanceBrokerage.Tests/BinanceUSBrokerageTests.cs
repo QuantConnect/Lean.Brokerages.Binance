@@ -13,26 +13,22 @@
  * limitations under the License.
 */
 
+using Moq;
+using NUnit.Framework;
+using QuantConnect.Brokerages;
+using QuantConnect.Configuration;
+using QuantConnect.Interfaces;
+using QuantConnect.Lean.Engine.DataFeeds;
+using QuantConnect.Securities;
+using QuantConnect.Tests.Brokerages;
+using QuantConnect.Tests.Common.Securities;
 using System;
 using System.Linq;
-using QuantConnect.Interfaces;
-using QuantConnect.Securities;
-using NUnit.Framework;
-using QuantConnect.BinanceBrokerage;
-using QuantConnect.Configuration;
-using Moq;
-using QuantConnect.Brokerages;
-using QuantConnect.Tests.Common.Securities;
-using QuantConnect.Orders;
-using QuantConnect.Logging;
-using System.Threading;
-using QuantConnect.Lean.Engine.DataFeeds;
-using QuantConnect.Tests.Brokerages;
 
 namespace QuantConnect.BinanceBrokerage.Tests
 {
     [TestFixture]
-    public partial class BinanceBrokerageTests : BrokerageTests
+    public partial class BinanceUSBrokerageTests : BinanceBrokerageTests
     {
         private BinanceBaseRestApiClient _binanceApi;
 
@@ -58,10 +54,10 @@ namespace QuantConnect.BinanceBrokerage.Tests
             algorithm.Setup(a => a.BrokerageModel).Returns(new BinanceBrokerageModel());
             algorithm.Setup(a => a.Portfolio).Returns(new SecurityPortfolioManager(securities, transactions));
 
-            var apiKey = Config.Get("binance-api-key");
-            var apiSecret = Config.Get("binance-api-secret");
-            var apiUrl = Config.Get("binance-api-url", "https://api.binance.com");
-            var websocketUrl = Config.Get("binance-websocket-url", "wss://stream.binance.com:9443/ws");
+            var apiKey = Config.Get("binanceus-api-key");
+            var apiSecret = Config.Get("binanceus-api-secret");
+            var apiUrl = Config.Get("binanceus-api-url", "https://api.binance.us");
+            var websocketUrl = Config.Get("binanceus-websocket-url", "wss://stream.binance.us:9443/ws");
 
             _binanceApi = new BinanceSpotRestApiClient(
                 SymbolMapper,
@@ -70,7 +66,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
                 apiSecret,
                 apiUrl);
 
-            return new BinanceBrokerage(
+            return new BinanceUSBrokerage(
                     apiKey,
                     apiSecret,
                     apiUrl,
@@ -82,20 +78,15 @@ namespace QuantConnect.BinanceBrokerage.Tests
         }
 
         /// <summary>
-        /// Gets Binance symbol mapper
+        /// Gets Binance.US symbol mapper
         /// </summary>
-        protected virtual ISymbolMapper SymbolMapper => new SymbolPropertiesDatabaseSymbolMapper(Market.Binance);
+        protected override ISymbolMapper SymbolMapper => new SymbolPropertiesDatabaseSymbolMapper(Market.BinanceUS);
 
         /// <summary>
         /// Gets the symbol to be traded, must be shortable
         /// </summary>
         protected override Symbol Symbol => StaticSymbol;
-        private static Symbol StaticSymbol => Symbol.Create("ETHBTC", SecurityType.Crypto, Market.Binance);
-
-        /// <summary>
-        /// Gets the security type associated with the <see cref="BrokerageTests.Symbol" />
-        /// </summary>
-        protected override SecurityType SecurityType => SecurityType.Crypto;
+        private static Symbol StaticSymbol => Symbol.Create("ETHUSDC", SecurityType.Crypto, Market.Binance);
 
         public static TestCaseData[] OrderParameters => new[]
         {
@@ -129,14 +120,9 @@ namespace QuantConnect.BinanceBrokerage.Tests
         }
 
         /// <summary>
-        /// Returns wether or not the brokers order methods implementation are async
-        /// </summary>
-        protected override bool IsAsync() => false;
-
-        /// <summary>
         /// Gets the default order quantity. Min order 10USD.
         /// </summary>
-        protected override decimal GetDefaultQuantity() => 0.01m;
+        protected override decimal GetDefaultQuantity() => 0.005m;
 
         [Explicit("This test requires a configured and testable Binance practice account")]
         [Test, TestCaseSource(nameof(OrderParameters))]
@@ -185,27 +171,6 @@ namespace QuantConnect.BinanceBrokerage.Tests
         public override void LongFromShort(OrderTestParameters parameters)
         {
             base.LongFromShort(parameters);
-        }
-
-        [Test, Ignore("Holdings are now set to 0 swaps at the start of each launch. Not meaningful.")]
-        public override void GetAccountHoldings()
-        {
-            Log.Trace("");
-            Log.Trace("GET ACCOUNT HOLDINGS");
-            Log.Trace("");
-            var before = Brokerage.GetAccountHoldings();
-            Assert.AreEqual(0, before.Count());
-
-            PlaceOrderWaitForStatus(new MarketOrder(Symbol, GetDefaultQuantity(), DateTime.Now));
-            Thread.Sleep(3000);
-
-            var after = Brokerage.GetAccountHoldings();
-            Assert.AreEqual(0, after.Count());
-        }
-
-        protected override void ModifyOrderUntilFilled(Order order, OrderTestParameters parameters, double secondsTimeout = 90)
-        {
-            Assert.Pass("Order update not supported. Please cancel and re-create.");
         }
     }
 }

@@ -22,12 +22,12 @@ using System.Linq;
 namespace QuantConnect.BinanceBrokerage.Tests
 {
     [TestFixture]
-    public class BinanceBrokerageExchangeInfoTests
+    public class BinanceUSBrokerageExchangeInfoTests
     {
         [Test]
         public void GetsExchangeInfo()
         {
-            var downloader = new BinanceExchangeInfoDownloader(Market.Binance, "https://api.binance.com");
+            var downloader = new BinanceExchangeInfoDownloader(Market.BinanceUS, "https://api.binance.us");
             var tickers = downloader.Get().ToList();
 
             Assert.IsTrue(tickers.Any());
