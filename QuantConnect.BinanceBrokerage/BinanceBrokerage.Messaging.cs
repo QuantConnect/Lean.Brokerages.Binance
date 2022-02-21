@@ -111,7 +111,7 @@ namespace QuantConnect.BinanceBrokerage
                         case "trade":
                             var trade = objData.ToObject<Trade>();
                             EmitTradeTick(
-                                _symbolMapper.GetLeanSymbol(trade.Symbol, SecurityType.Crypto, Market.Binance),
+                                _symbolMapper.GetLeanSymbol(trade.Symbol, SecurityType.Crypto, MarketName),
                                 Time.UnixMillisecondTimeStampToDateTime(trade.Time),
                                 trade.Price,
                                 trade.Quantity);
@@ -122,7 +122,7 @@ namespace QuantConnect.BinanceBrokerage
                 {
                     var quote = objData.ToObject<BestBidAskQuote>();
                     EmitQuoteTick(
-                        _symbolMapper.GetLeanSymbol(quote.Symbol, SecurityType.Crypto, Market.Binance),
+                        _symbolMapper.GetLeanSymbol(quote.Symbol, SecurityType.Crypto, MarketName),
                         quote.BestBidPrice,
                         quote.BestBidSize,
                         quote.BestAskPrice,

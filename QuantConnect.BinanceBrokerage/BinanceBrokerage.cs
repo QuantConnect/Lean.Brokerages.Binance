@@ -66,6 +66,8 @@ namespace QuantConnect.BinanceBrokerage
 
         private const int MaximumSymbolsPerConnection = 512;
 
+        protected string MarketName { get; set; }
+
         /// <summary>
         /// Parameterless constructor for brokerage
         /// </summary>
@@ -78,6 +80,7 @@ namespace QuantConnect.BinanceBrokerage
         /// </summary>
         public BinanceBrokerage(string marketName) : base(marketName)
         {
+            MarketName = marketName;
         }
 
         /// <summary>
@@ -192,7 +195,7 @@ namespace QuantConnect.BinanceBrokerage
             foreach (var item in orders)
             {
                 var orderQuantity = item.Quantity;
-                var orderLeanSymbol = _symbolMapper.GetLeanSymbol(item.Symbol, SecurityType.Crypto, Market.Binance);
+                var orderLeanSymbol = _symbolMapper.GetLeanSymbol(item.Symbol, SecurityType.Crypto, MarketName);
                 var orderTime = Time.UnixMillisecondTimeStampToDateTime(item.Time);
 
                 Order order;
@@ -407,11 +410,11 @@ namespace QuantConnect.BinanceBrokerage
         /// </summary>
         /// <param name="symbol">The symbol</param>
         /// <returns>returns true if brokerage supports the specified symbol; otherwise false</returns>
-        private static bool CanSubscribe(Symbol symbol)
+        private bool CanSubscribe(Symbol symbol)
         {
             return !symbol.Value.Contains("UNIVERSE") &&
                    symbol.SecurityType == SecurityType.Crypto &&
-                   symbol.ID.Market == Market.Binance;
+                   symbol.ID.Market == MarketName;
         }
 
         #endregion IDataQueueHandler
@@ -464,9 +467,10 @@ namespace QuantConnect.BinanceBrokerage
             _webSocketBaseUrl = wssUrl;
             _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage);
             _symbolMapper = new(marketName);
+            MarketName = marketName;
 
             var maximumWebSocketConnections = Config.GetInt("binance-maximum-websocket-connections");
-            var symbolWeights = maximumWebSocketConnections > 0 ? FetchSymbolWeights() : null;
+            var symbolWeights = maximumWebSocketConnections > 0 ? FetchSymbolWeights(_symbolMapper, restApiUrl) : null;
 
             var subscriptionManager = new BrokerageMultiWebSocketSubscriptionManager(
                 wssUrl,
@@ -598,7 +602,6 @@ namespace QuantConnect.BinanceBrokerage
             _webSocketRateLimiter.WaitToProceed();
 
             Log.Trace("Send: " + json);
-
             webSocket.Send(json);
         }
 
@@ -630,32 +633,20 @@ namespace QuantConnect.BinanceBrokerage
         /// <summary>
         /// Returns the weights for each symbol (the weight value is the count of trades in the last 24 hours)
         /// </summary>
-        private static Dictionary<Symbol, int> FetchSymbolWeights()
+        private Dictionary<Symbol, int> FetchSymbolWeights(ISymbolMapper symbolMapper, string restApiUrl)
         {
-            var dict = new Dictionary<Symbol, int>();
-
             try
             {
-                const string url = "https://api.binance.com/api/v3/ticker/24hr";
-                var json = url.DownloadData();
+                var restClient = new BinanceSpotRestApiClient(_symbolMapper, null, null, null, restApiUrl);
 
-                foreach (var row in JArray.Parse(json))
-                {
-                    var ticker = row["symbol"].ToObject<string>();
-                    var count = row["count"].ToObject<int>();
-
-                    var symbol = Symbol.Create(ticker, SecurityType.Crypto, Market.Binance);
-
-                    dict.Add(symbol, count);
-                }
+                return restClient.GetTickerPriceChangeStatistics()
+                    .ToDictionary(s => _symbolMapper.GetLeanSymbol(s.Symbol, SecurityType.Crypto, MarketName), s => s.Count);
             }
             catch (Exception exception)
             {
                 Log.Error(exception);
                 throw;
             }
-
-            return dict;
         }
 
         /// <summary>

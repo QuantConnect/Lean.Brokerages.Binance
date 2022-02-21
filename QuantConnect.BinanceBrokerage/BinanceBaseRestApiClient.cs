@@ -389,6 +389,23 @@ namespace QuantConnect.BinanceBrokerage
         }
 
         /// <summary>
+        /// Ticker Price Change Statistics
+        /// </summary>
+        public PriceChangeStatistics[] GetTickerPriceChangeStatistics()
+        {
+            var endpoint = $"{_apiPrefix}/ticker/24hr";
+            var request = new RestRequest(endpoint, Method.GET);
+
+            var response = ExecuteRestRequest(request);
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                throw new Exception($"BinanceBrokerage.GetCashBalance: request failed: [{(int)response.StatusCode}] {response.StatusDescription}, Content: {response.Content}, ErrorMessage: {response.ErrorMessage}");
+            }
+            
+            return JsonConvert.DeserializeObject<PriceChangeStatistics[]>(response.Content); 
+        }
+
+        /// <summary>
         /// Check User Data stream listen key is alive
         /// </summary>
         /// <returns></returns>
