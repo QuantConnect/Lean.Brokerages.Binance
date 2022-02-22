@@ -13,6 +13,7 @@
  * limitations under the License.
 */
 
+using System;
 using NUnit.Framework;
 using QuantConnect.Brokerages;
 using QuantConnect.Configuration;
@@ -43,6 +44,19 @@ namespace QuantConnect.BinanceBrokerage.Tests
                 new AggregationManager(),
                 null
             );
+        }
+
+        [Test]
+        public void ThrowInTestnetApiEndpoint()
+        {
+            Assert.Throws<InvalidOperationException>(() => new BinanceUSBrokerage(
+                null,
+                null,
+                "https://testnet.binance.vision",
+                "wss://testnet.binance.vision/ws",
+                null,
+                null,
+                null));
         }
     }
 }

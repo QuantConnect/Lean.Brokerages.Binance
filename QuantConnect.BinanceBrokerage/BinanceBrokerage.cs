@@ -460,6 +460,10 @@ namespace QuantConnect.BinanceBrokerage
             {
                 return;
             }
+            if (marketName.Equals(Market.BinanceUS) && restApiUrl.Contains("testnet.binance.vision"))
+            {
+                throw new InvalidOperationException("Binance.US doesn't support SPOT Testnet trading.");
+            }
             base.Initialize(wssUrl, new WebSocketClientWrapper(), null, apiKey, apiSecret);
             _job = job;
             _algorithm = algorithm;
