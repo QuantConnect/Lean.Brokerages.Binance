@@ -344,7 +344,7 @@ namespace QuantConnect.BinanceBrokerage
             var endpoint = $"/api/v3/klines?symbol={symbol}&interval={resolution}&limit=1000";
             if (_restClient?.BaseUrl?.Host.Equals("testnet.binance.vision") == true)
             {
-                // we always use the real endpoint for history requests
+                // we always use the global endpoint for history requests, as not binance testnet available
                 endpoint = "https://api.binance.com" + endpoint;
             }
 
