@@ -15,9 +15,18 @@
 
 namespace QuantConnect.BinanceBrokerage.Messages
 {
+    /// <summary>
+    /// 24 hour rolling window price change statistics.
+    /// </summary>
     public class PriceChangeStatistics
     {
+        /// <summary>
+        /// Ticker
+        /// </summary>
         public string Symbol { get; set; }
+        /// <summary>
+        /// Trade count
+        /// </summary>
         public int Count { get; set; }
     }
 }

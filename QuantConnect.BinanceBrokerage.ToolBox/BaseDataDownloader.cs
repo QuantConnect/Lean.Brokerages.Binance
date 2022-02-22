@@ -78,7 +78,7 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
                 resolution,
                 false,
                 false,
-                DataNormalizationMode.Adjusted,
+                DataNormalizationMode.Raw,
                 TickType.Trade);
 
             return Brokerage.GetHistory(historyRequest);
