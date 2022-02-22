@@ -25,16 +25,18 @@ namespace QuantConnect.BinanceBrokerage.Tests
     public class BinanceBrokerageExchangeInfoTests
     {
         [Test]
-        public void GetsExchangeInfo()
+        [TestCase(Market.Binance)]
+        [TestCase(Market.BinanceUS)]
+        public void GetsExchangeInfo(string marketName)
         {
-            var downloader = new BinanceExchangeInfoDownloader(Market.Binance, "https://api.binance.com");
+            var downloader = new BinanceExchangeInfoDownloader(marketName);
             var tickers = downloader.Get().ToList();
 
             Assert.IsTrue(tickers.Any());
 
             foreach (var t in tickers)
             {
-                Assert.IsTrue(t.StartsWith(Market.Binance, StringComparison.OrdinalIgnoreCase));
+                Assert.IsTrue(t.StartsWith(marketName, StringComparison.OrdinalIgnoreCase));
             }
 
             Log.Trace("Tickers retrieved: " + tickers.Count);
