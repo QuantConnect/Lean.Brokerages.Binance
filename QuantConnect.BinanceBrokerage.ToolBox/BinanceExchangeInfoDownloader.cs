@@ -13,6 +13,7 @@
  * limitations under the License.
 */
 
+using System;
 using Newtonsoft.Json;
 using QuantConnect.BinanceBrokerage.ToolBox.Models;
 using QuantConnect.ToolBox;
@@ -28,6 +29,9 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
     /// </summary>
     public class BinanceExchangeInfoDownloader : IExchangeInfoDownloader
     {
+        private const string _binanceApiEndpoint = "https://api.binance.com";
+        private const string _binanceUsApiEndpoint = "https://api.binance.us";
+
         /// <summary>
         /// Market name
         /// </summary>
@@ -35,10 +39,12 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
 
         private string _restApiHost;
 
-        public BinanceExchangeInfoDownloader(string market, string restApiHost)
+        public BinanceExchangeInfoDownloader(string market)
         {
             Market = market;
-            _restApiHost = restApiHost;
+            _restApiHost = market.Equals(QuantConnect.Market.Binance, StringComparison.OrdinalIgnoreCase)
+                ? _binanceApiEndpoint
+                : _binanceUsApiEndpoint;
         }
 
         /// <summary>

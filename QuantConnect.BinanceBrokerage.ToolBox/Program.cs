@@ -74,11 +74,11 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
                 BinanceExchangeInfoDownloader exchangeInfoDownloader;
                 if (targetAppName.Equals("binanceussymbolpropertiesupdater") || targetAppName.Equals("mbxusspu"))
                 {
-                    exchangeInfoDownloader = new BinanceExchangeInfoDownloader(Market.BinanceUS, "https://api.binance.us");
+                    exchangeInfoDownloader = new BinanceExchangeInfoDownloader(Market.BinanceUS);
                 }
                 else
                 {
-                    exchangeInfoDownloader = new BinanceExchangeInfoDownloader(Market.Binance, "https://api.binance.com");
+                    exchangeInfoDownloader = new BinanceExchangeInfoDownloader(Market.Binance);
                 }
 
                 ExchangeInfoDownloader(exchangeInfoDownloader);
