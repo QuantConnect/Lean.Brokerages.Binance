@@ -29,10 +29,12 @@ namespace QuantConnect.BinanceBrokerage.Tests
     [TestFixture]
     public class BinanceBrokerageAdditionalTests
     {
+        protected virtual string BrokerageClassName => nameof(BinanceBrokerage);
+
         [Test]
         public void ParameterlessConstructorComposerUsage()
         {
-            var brokerage = Composer.Instance.GetExportedValueByTypeName<IDataQueueHandler>("BinanceBrokerage");
+            var brokerage = Composer.Instance.GetExportedValueByTypeName<IDataQueueHandler>(BrokerageClassName);
             Assert.IsNotNull(brokerage);
             Assert.True(brokerage.IsConnected);
         }
@@ -64,10 +66,10 @@ namespace QuantConnect.BinanceBrokerage.Tests
             algorithm.Setup(a => a.BrokerageModel).Returns(new BinanceBrokerageModel());
             algorithm.Setup(a => a.Portfolio).Returns(new SecurityPortfolioManager(securities, transactions));
 
-            using var brokerage =  CreateBrokerage(algorithm.Object);
+            using var brokerage = CreateBrokerage(algorithm.Object);
 
             Assert.True(brokerage.IsConnected);
-            
+
             var _ = brokerage.GetCashBalance();
 
             Assert.True(brokerage.IsConnected);
@@ -77,7 +79,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
             Assert.False(brokerage.IsConnected);
         }
 
-        private static Brokerage CreateBrokerage(IAlgorithm algorithm)
+        protected virtual Brokerage CreateBrokerage(IAlgorithm algorithm)
         {
             var apiKey = Config.Get("binance-api-key");
             var apiSecret = Config.Get("binance-api-secret");

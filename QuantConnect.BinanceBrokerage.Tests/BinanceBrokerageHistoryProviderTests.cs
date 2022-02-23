@@ -50,7 +50,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
         [Test]
         [TestCaseSource(nameof(ValidHistory))]
         [TestCaseSource(nameof(InvalidHistory))]
-        public void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, bool throwsException)
+        public virtual void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, bool throwsException)
         {
             TestDelegate test = () =>
             {
@@ -112,7 +112,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
 
         [Test]
         [TestCaseSource(nameof(NoHistory))]
-        public void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
+        public virtual void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
         {
             TestDelegate test = () =>
             {
@@ -194,7 +194,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
             }
         }
 
-        private static Brokerage CreateBrokerage()
+        protected virtual Brokerage CreateBrokerage()
         {
             var apiKey = Config.Get("binance-api-key");
             var apiSecret = Config.Get("binance-api-secret");

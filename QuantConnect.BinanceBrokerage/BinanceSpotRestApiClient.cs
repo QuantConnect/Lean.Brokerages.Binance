@@ -29,7 +29,7 @@ namespace QuantConnect.BinanceBrokerage
         private const string _apiPrefix = "/api/v3";
 
         public BinanceSpotRestApiClient(
-            SymbolPropertiesDatabaseSymbolMapper symbolMapper,
+            ISymbolMapper symbolMapper,
             ISecurityProvider securityProvider,
             string apiKey,
             string apiSecret,

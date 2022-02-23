@@ -15,6 +15,8 @@
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using QuantConnect.BinanceBrokerage.Messages;
+using QuantConnect.Brokerages;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
@@ -28,8 +30,6 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
-using QuantConnect.BinanceBrokerage.Messages;
-using QuantConnect.Brokerages;
 using Order = QuantConnect.Orders.Order;
 
 namespace QuantConnect.BinanceBrokerage
@@ -45,7 +45,7 @@ namespace QuantConnect.BinanceBrokerage
 
         private string UserDataStreamEndpoint => $"{_wsPrefix}/userDataStream";
 
-        private readonly SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
+        private readonly ISymbolMapper _symbolMapper;
         private readonly ISecurityProvider _securityProvider;
         private readonly IRestClient _restClient;
         private readonly RateGate _restRateLimiter = new(10, TimeSpan.FromSeconds(1));
@@ -96,8 +96,14 @@ namespace QuantConnect.BinanceBrokerage
         /// <param name="restApiUrl">The Binance API rest url</param>
         /// <param name="restApiPrefix">REST API path prefix depending on SPOT or CROSS MARGIN trading</param>
         /// <param name="wsApiPrefix">REST API path prefix for user data streaming auth process depending on SPOT or CROSS MARGIN trading</param>
-        public BinanceBaseRestApiClient(SymbolPropertiesDatabaseSymbolMapper symbolMapper, ISecurityProvider securityProvider,
-            string apiKey, string apiSecret, string restApiUrl, string restApiPrefix, string wsApiPrefix)
+        public BinanceBaseRestApiClient(
+            ISymbolMapper symbolMapper,
+            ISecurityProvider securityProvider,
+            string apiKey,
+            string apiSecret,
+            string restApiUrl,
+            string restApiPrefix,
+            string wsApiPrefix)
         {
             _symbolMapper = symbolMapper;
             _securityProvider = securityProvider;
@@ -334,8 +340,13 @@ namespace QuantConnect.BinanceBrokerage
             var symbol = _symbolMapper.GetBrokerageSymbol(request.Symbol);
             var startMs = (long)Time.DateTimeToUnixTimeStamp(request.StartTimeUtc) * 1000;
             var endMs = (long)Time.DateTimeToUnixTimeStamp(request.EndTimeUtc) * 1000;
-            // we always use the real endpoint for history requests
-            var endpoint = $"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={resolution}&limit=1000";
+
+            var endpoint = $"/api/v3/klines?symbol={symbol}&interval={resolution}&limit=1000";
+            if (_restClient?.BaseUrl?.Host.Equals("testnet.binance.vision") == true)
+            {
+                // we always use the global endpoint for history requests, as not binance testnet available
+                endpoint = "https://api.binance.com" + endpoint;
+            }
 
             while (endMs - startMs >= resolutionInMs)
             {
@@ -375,6 +386,23 @@ namespace QuantConnect.BinanceBrokerage
                     break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Ticker Price Change Statistics
+        /// </summary>
+        public PriceChangeStatistics[] GetTickerPriceChangeStatistics()
+        {
+            var endpoint = $"{_apiPrefix}/ticker/24hr";
+            var request = new RestRequest(endpoint, Method.GET);
+
+            var response = ExecuteRestRequest(request);
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                throw new Exception($"BinanceBrokerage.GetCashBalance: request failed: [{(int)response.StatusCode}] {response.StatusDescription}, Content: {response.Content}, ErrorMessage: {response.ErrorMessage}");
+            }
+            
+            return JsonConvert.DeserializeObject<PriceChangeStatistics[]>(response.Content); 
         }
 
         /// <summary>

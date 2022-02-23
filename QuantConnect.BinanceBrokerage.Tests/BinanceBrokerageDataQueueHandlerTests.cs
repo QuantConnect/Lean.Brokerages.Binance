@@ -24,24 +24,29 @@ namespace QuantConnect.BinanceBrokerage.Tests
     [TestFixture]
     public partial class BinanceBrokerageTests
     {
-        private static readonly Symbol XRP_USDT = Symbol.Create("XRPUSDT", SecurityType.Crypto, Market.FTX);
-
         private static TestCaseData[] TestParameters
         {
             get
             {
+                var FTM_USDT = Symbol.Create("FTMUSDT", SecurityType.Crypto, Market.Binance);
+
                 return new[]
                 {
                     // valid parameters, for example
-                    new TestCaseData(XRP_USDT, Resolution.Tick, false),
-                    new TestCaseData(XRP_USDT, Resolution.Minute, false),
-                    new TestCaseData(XRP_USDT, Resolution.Second, false),
+                    new TestCaseData(FTM_USDT, Resolution.Tick, false),
+                    new TestCaseData(FTM_USDT, Resolution.Minute, false),
+                    new TestCaseData(FTM_USDT, Resolution.Second, false),
                 };
             }
         }
 
         [Test, TestCaseSource(nameof(TestParameters))]
-        public void StreamsData(Symbol symbol, Resolution resolution, bool throwsException)
+        public virtual void StreamsDataTest(Symbol symbol, Resolution resolution, bool throwsException)
+        {
+            StreamsData(symbol, resolution, throwsException);
+        }
+
+        protected void StreamsData(Symbol symbol, Resolution resolution, bool throwsException)
         {
             var cancelationToken = new CancellationTokenSource();
             var brokerage = (BinanceBrokerage)Brokerage;

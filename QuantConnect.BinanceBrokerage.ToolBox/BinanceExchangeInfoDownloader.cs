@@ -13,6 +13,7 @@
  * limitations under the License.
 */
 
+using System;
 using Newtonsoft.Json;
 using QuantConnect.BinanceBrokerage.ToolBox.Models;
 using QuantConnect.ToolBox;
@@ -28,10 +29,23 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
     /// </summary>
     public class BinanceExchangeInfoDownloader : IExchangeInfoDownloader
     {
+        private const string _binanceApiEndpoint = "https://api.binance.com";
+        private const string _binanceUsApiEndpoint = "https://api.binance.us";
+
         /// <summary>
         /// Market name
         /// </summary>
-        public string Market => QuantConnect.Market.Binance;
+        public string Market { get; }
+
+        private string _restApiHost;
+
+        public BinanceExchangeInfoDownloader(string market)
+        {
+            Market = market;
+            _restApiHost = market.Equals(QuantConnect.Market.Binance, StringComparison.OrdinalIgnoreCase)
+                ? _binanceApiEndpoint
+                : _binanceUsApiEndpoint;
+        }
 
         /// <summary>
         /// Pulling data from a remote source
@@ -39,7 +53,7 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
         /// <returns>Enumerable of exchange info</returns>
         public IEnumerable<string> Get()
         {
-            var request = (HttpWebRequest)WebRequest.Create("https://api.binance.com/api/v3/exchangeInfo");
+            var request = (HttpWebRequest)WebRequest.Create($"{_restApiHost}/api/v3/exchangeInfo");
 
             using (var response = (HttpWebResponse)request.GetResponse())
             using (var stream = response.GetResponseStream())
@@ -67,7 +81,7 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
                         .First(f => f.GetValue("filterType").ToString() == "MIN_NOTIONAL");
                     var minOrderSize = minNotional.GetValue("minNotional").ToObject<decimal>().NormalizeToStr();
 
-                    yield return $"binance,{symbol.Name},crypto,{symbol.Name},{symbol.QuoteAsset},1,{priceFilter},{stepSize},{symbol.Name},{minOrderSize}";
+                    yield return $"{Market.ToLowerInvariant()},{symbol.Name},crypto,{symbol.Name},{symbol.QuoteAsset},1,{priceFilter},{stepSize},{symbol.Name},{minOrderSize}";
                 }
             }
         }
