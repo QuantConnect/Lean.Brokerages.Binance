@@ -474,7 +474,7 @@ namespace QuantConnect.BinanceBrokerage
             MarketName = marketName;
 
             var maximumWebSocketConnections = Config.GetInt("binance-maximum-websocket-connections");
-            var symbolWeights = maximumWebSocketConnections > 0 ? FetchSymbolWeights(_symbolMapper, restApiUrl) : null;
+            var symbolWeights = maximumWebSocketConnections > 0 ? FetchSymbolWeights(restApiUrl) : null;
 
             var subscriptionManager = new BrokerageMultiWebSocketSubscriptionManager(
                 wssUrl,
@@ -637,14 +637,28 @@ namespace QuantConnect.BinanceBrokerage
         /// <summary>
         /// Returns the weights for each symbol (the weight value is the count of trades in the last 24 hours)
         /// </summary>
-        private Dictionary<Symbol, int> FetchSymbolWeights(ISymbolMapper symbolMapper, string restApiUrl)
+        private Dictionary<Symbol, int> FetchSymbolWeights(string restApiUrl)
         {
             try
             {
                 var restClient = new BinanceSpotRestApiClient(_symbolMapper, null, null, null, restApiUrl);
+                var symbolAndTradeCount = restClient.GetTickerPriceChangeStatistics();
 
-                return restClient.GetTickerPriceChangeStatistics()
-                    .ToDictionary(s => _symbolMapper.GetLeanSymbol(s.Symbol, SecurityType.Crypto, MarketName), s => s.Count);
+                var result = new Dictionary<Symbol, int>();
+                foreach (var s in symbolAndTradeCount)
+                {
+                    try
+                    {
+                        result[_symbolMapper.GetLeanSymbol(s.Symbol, SecurityType.Crypto, MarketName)] = s.Count;
+                    }
+                    catch
+                    {
+                        // will ignore symbols we do not support
+                    }
+                }
+
+                Log.Trace($"BinanceBrokerage.FetchSymbolWeights(): returning weights for '{result.Count}' symbols");
+                return result;
             }
             catch (Exception exception)
             {
@@ -658,7 +672,7 @@ namespace QuantConnect.BinanceBrokerage
         /// </summary>
         private void Connect(string sessionId)
         {
-            Log.Trace("BaseWebSocketsBrokerage.Connect(): Connecting...");
+            Log.Trace("BinanceBrokerage.Connect(): Connecting...");
 
             _reconnectTimer.Start();
             WebSocket.Initialize($"{_webSocketBaseUrl}/{sessionId}");
