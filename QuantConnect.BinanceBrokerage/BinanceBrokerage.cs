@@ -431,6 +431,7 @@ namespace QuantConnect.BinanceBrokerage
                 ApiClient.DisposeSafely();
             }
             _webSocketRateLimiter.DisposeSafely();
+            SubscriptionManager.DisposeSafely();
         }
 
         /// <summary>
