@@ -29,6 +29,8 @@ For more information about the Binance brokerage, see the [QuantConnect-Binance 
 
   You can deploy using a visual interface in the QuantConnect Cloud. For more information see the [QuantConnect-Binance Integration Page](https://www.quantconnect.com/brokerages/binance).
 
+![deploy-binance](https://user-images.githubusercontent.com/38889814/188243919-3a77ab4c-4c8b-40c4-97c9-b82114f09f35.gif)
+
   In the QuantConnect Cloud Platform you can harness the QuantConnect Live Data Feed. For most users this is substantially cheaper and easier than self-hosting.
   
 ### Deploying Binance with LEAN CLI
