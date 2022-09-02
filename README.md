@@ -14,9 +14,8 @@ This repository hosts the Binance and BinanceUS Brokerage Plugin Integration wit
 
 <p align="center">
 <picture >
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/">
-  <img alt="introduction" width="40%">
+ <source srcset="https://user-images.githubusercontent.com/79997186/188238225-e9f8275f-cd70-4778-beac-77311f28bc83.png">
+ <img alt="binance" width="32%">
 </picture>
 <p>
 
