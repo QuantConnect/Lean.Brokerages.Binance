@@ -22,6 +22,8 @@ This repository hosts the Binance and BinanceUS Brokerage Plugin Integration wit
 
 [Binance](https://www.binance.com/) was founded by Changpeng Zhao in 2017 with the goal to "increase the freedom of money globally". Binance provides access to trading Crypto through spot markets and perpetual Futures. They serve clients with no minimum deposit when depositing Crypto. Binance also provides an NFT marketplace, a mining pool, and services to deposit Crypto coins in liquidity pools to earn rewards.
 
+For more information about the Binance brokerage, see the [QuantConnect-Binance Integration Page](https://www.quantconnect.com/docs/v2/our-platform/live-trading/brokerages/binance).
+
 ## Using the Brokerage Plugin
   
 ### Deploying Binance with VSCode User Interace
@@ -122,9 +124,9 @@ Follow these steps to start local live trading with the Binance brokerage:
         To enter multiple options, separate them with comma:
     ```
 
-8. View the result in the `<projectName>`/live/`<timestamp>` directory. Results are stored in real-time in JSON format. You can save results to a different directory by providing the --output `<path>` option in step 2.
+8. View the result in the `<projectName>/live/<timestamp>` directory. Results are stored in real-time in JSON format. You can save results to a different directory by providing the `--output <path>` option in step 2.
 
-If you already have a live environment configured in your [Lean configuration file](https://www.quantconnect.com/docs/v2/lean-cli/initialization/configuration#03-Lean-Configuration), you can skip the interactive wizard by providing the --environment `<value>` option in step 2. The value of this option must be the name of an environment which has live-mode set to true.
+If you already have a live environment configured in your [Lean configuration file](https://www.quantconnect.com/docs/v2/lean-cli/initialization/configuration#03-Lean-Configuration), you can skip the interactive wizard by providing the `--environment <value>` option in step 2. The value of this option must be the name of an environment which has `live-mode` set to true.
 
 ## Account Types
 
