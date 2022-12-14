@@ -14,13 +14,11 @@
 */
 
 using System;
+using System.Linq;
 using Newtonsoft.Json;
-using QuantConnect.BinanceBrokerage.ToolBox.Models;
 using QuantConnect.ToolBox;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
+using QuantConnect.BinanceBrokerage.ToolBox.Models;
 
 namespace QuantConnect.BinanceBrokerage.ToolBox
 {
@@ -29,15 +27,17 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
     /// </summary>
     public class BinanceExchangeInfoDownloader : IExchangeInfoDownloader
     {
+        private const string _binanceFutureCryptoApiEndpoint = "https://fapi.binance.com/fapi";
+        private const string _binanceFutureCoinApiEndpoint = "https://dapi.binance.com/dapi";
         private const string _binanceApiEndpoint = "https://api.binance.com";
         private const string _binanceUsApiEndpoint = "https://api.binance.us";
+        private readonly string _restApiHost;
 
         /// <summary>
         /// Market name
         /// </summary>
         public string Market { get; }
 
-        private string _restApiHost;
 
         public BinanceExchangeInfoDownloader(string market)
         {
@@ -53,35 +53,62 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
         /// <returns>Enumerable of exchange info</returns>
         public IEnumerable<string> Get()
         {
-            var request = (HttpWebRequest)WebRequest.Create($"{_restApiHost}/api/v3/exchangeInfo");
+            var data = Extensions.DownloadData($"{_restApiHost}/api/v3/exchangeInfo");
 
-            using (var response = (HttpWebResponse)request.GetResponse())
-            using (var stream = response.GetResponseStream())
-            using (var reader = new StreamReader(stream))
+            foreach (var symbol in JsonConvert.DeserializeObject<ExchangeInfo>(data).Symbols)
             {
-                var exchangeInfo = JsonConvert.DeserializeObject<ExchangeInfo>(reader.ReadToEnd());
-
-                foreach (var symbol in exchangeInfo.Symbols.OrderBy(x => x.Name))
+                if (!symbol.IsSpotTradingAllowed && !symbol.IsMarginTradingAllowed)
                 {
-                    if (!symbol.IsSpotTradingAllowed && !symbol.IsMarginTradingAllowed)
+                    // exclude derivatives
+                    continue;
+                }
+
+                var priceFilter = symbol.Filters
+                    .First(f => f.GetValue("filterType").ToString() == "PRICE_FILTER")
+                    .GetValue("tickSize").ToObject<decimal>().NormalizeToStr();
+
+                var lotFilter = symbol.Filters
+                    .First(f => f.GetValue("filterType").ToString() == "LOT_SIZE");
+                var stepSize = lotFilter.GetValue("stepSize").ToObject<decimal>().NormalizeToStr();
+
+                var minNotional = symbol.Filters
+                    .First(f => f.GetValue("filterType").ToString() == "MIN_NOTIONAL");
+                var minOrderSize = minNotional.GetValue("minNotional").ToObject<decimal>().NormalizeToStr();
+
+                yield return $"{Market.ToLowerInvariant()},{symbol.Name},crypto,{symbol.Name},{symbol.QuoteAsset},1,{priceFilter},{stepSize},{symbol.Name},{minOrderSize}";
+            }
+
+            if(Market == QuantConnect.Market.Binance)
+            {
+                foreach (var endpoint in new[] { _binanceFutureCryptoApiEndpoint, _binanceFutureCoinApiEndpoint })
+                {
+                    var futureData = Extensions.DownloadData($"{endpoint}/v1/exchangeInfo");
+
+                    foreach (var symbol in JsonConvert.DeserializeObject<ExchangeInfo>(futureData).Symbols)
                     {
-                        // exclude derivatives
-                        continue;
+                        if (!symbol.ContractType.Equals("PERPETUAL", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        var priceFilter = symbol.Filters
+                            .First(f => f.GetValue("filterType").ToString() == "PRICE_FILTER")
+                            .GetValue("tickSize").ToObject<decimal>().NormalizeToStr();
+
+                        var lotFilter = symbol.Filters
+                            .First(f => f.GetValue("filterType").ToString() == "LOT_SIZE");
+                        var stepSize = lotFilter.GetValue("stepSize").ToObject<decimal>().NormalizeToStr();
+
+                        var contractSize = 1;
+                        if (symbol.ContractSize != 0)
+                        {
+                            // Coin-Margined futures have a contract multiplier of 100 or 10
+                            // USDT margined futures do not have a contract multiplier
+                            contractSize = symbol.ContractSize;
+                        }
+
+                        yield return $"{Market.ToLowerInvariant()},{symbol.Name.RemoveFromEnd("_PERP")},cryptofuture,{symbol.Name},{symbol.QuoteAsset},{contractSize},{priceFilter},{stepSize},{symbol.Name}";
                     }
-
-                    var priceFilter = symbol.Filters
-                        .First(f => f.GetValue("filterType").ToString() == "PRICE_FILTER")
-                        .GetValue("tickSize").ToObject<decimal>().NormalizeToStr();
-
-                    var lotFilter = symbol.Filters
-                        .First(f => f.GetValue("filterType").ToString() == "LOT_SIZE");
-                    var stepSize = lotFilter.GetValue("stepSize").ToObject<decimal>().NormalizeToStr();
-
-                    var minNotional = symbol.Filters
-                        .First(f => f.GetValue("filterType").ToString() == "MIN_NOTIONAL");
-                    var minOrderSize = minNotional.GetValue("minNotional").ToObject<decimal>().NormalizeToStr();
-
-                    yield return $"{Market.ToLowerInvariant()},{symbol.Name},crypto,{symbol.Name},{symbol.QuoteAsset},1,{priceFilter},{stepSize},{symbol.Name},{minOrderSize}";
                 }
             }
         }
