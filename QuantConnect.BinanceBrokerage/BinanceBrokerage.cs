@@ -247,6 +247,11 @@ namespace QuantConnect.BinanceBrokerage
         /// <returns>True if the request for a new order has been placed, false otherwise</returns>
         public override bool PlaceOrder(Order order)
         {
+            if (!CanSubscribe(order.Symbol))
+            {
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, $"Symbol is not supported {order.Symbol}"));
+                return false;
+            }
             var submitted = false;
 
             _messageHandler.WithLockedStream(() =>
@@ -413,7 +418,7 @@ namespace QuantConnect.BinanceBrokerage
         /// </summary>
         /// <param name="symbol">The symbol</param>
         /// <returns>returns true if brokerage supports the specified symbol; otherwise false</returns>
-        private bool CanSubscribe(Symbol symbol)
+        protected virtual bool CanSubscribe(Symbol symbol)
         {
             return !symbol.Value.Contains("UNIVERSE") &&
                    symbol.SecurityType == GetSupportedSecurityType() &&

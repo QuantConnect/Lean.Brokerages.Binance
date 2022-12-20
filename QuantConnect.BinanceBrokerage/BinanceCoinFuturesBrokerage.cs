@@ -14,6 +14,7 @@
  */
 
 using QuantConnect.Data;
+using QuantConnect.Util;
 using QuantConnect.Packets;
 using QuantConnect.Securities;
 using QuantConnect.Brokerages;
@@ -59,6 +60,22 @@ namespace QuantConnect.BinanceBrokerage
                 job,
                 Market.Binance
             );
+        }
+
+        /// <summary>
+        /// Checks if this brokerage supports the specified symbol
+        /// </summary>
+        /// <param name="symbol">The symbol</param>
+        /// <returns>returns true if brokerage supports the specified symbol; otherwise false</returns>
+        protected override bool CanSubscribe(Symbol symbol)
+        {
+            if (!base.CanSubscribe(symbol))
+            {
+                return false;
+            }
+            CurrencyPairUtil.DecomposeCurrencyPair(symbol, out var _, out var quoteCurrency);
+
+            return quoteCurrency.Equals("USD", System.StringComparison.InvariantCultureIgnoreCase);
         }
 
         /// <summary>
