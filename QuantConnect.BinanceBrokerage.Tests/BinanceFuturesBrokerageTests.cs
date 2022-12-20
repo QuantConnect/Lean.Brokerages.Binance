@@ -1,4 +1,4 @@
-/*
+﻿/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  *
@@ -13,25 +13,22 @@
  * limitations under the License.
 */
 
+using Moq;
 using System;
 using System.Linq;
+using NUnit.Framework;
+using QuantConnect.Brokerages;
 using QuantConnect.Interfaces;
 using QuantConnect.Securities;
-using NUnit.Framework;
 using QuantConnect.Configuration;
-using Moq;
-using QuantConnect.Brokerages;
-using QuantConnect.Tests.Common.Securities;
-using QuantConnect.Orders;
-using QuantConnect.Logging;
-using System.Threading;
-using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Tests.Brokerages;
+using QuantConnect.Lean.Engine.DataFeeds;
+using QuantConnect.Tests.Common.Securities;
 
 namespace QuantConnect.BinanceBrokerage.Tests
 {
     [TestFixture]
-    public partial class BinanceBrokerageTests : BrokerageTests
+    public partial class BinanceFuturesBrokerageTests : BrokerageTests
     {
         private BinanceBaseRestApiClient _binanceApi;
 
@@ -59,17 +56,17 @@ namespace QuantConnect.BinanceBrokerage.Tests
 
             var apiKey = Config.Get("binance-api-key");
             var apiSecret = Config.Get("binance-api-secret");
-            var apiUrl = Config.Get("binance-api-url", "https://api.binance.com");
-            var websocketUrl = Config.Get("binance-websocket-url", "wss://stream.binance.com:9443/ws");
+            var apiUrl = Config.Get(BinanceFuturesBrokerageFactory.ApiUrlKeyName, "https://fapi.binance.com");
+            var websocketUrl = Config.Get(BinanceFuturesBrokerageFactory.WebSocketUrlKeyName, "wss://fstream.binance.com/ws");
 
-            _binanceApi = new BinanceSpotRestApiClient(
+            _binanceApi = new BinanceFuturesRestApiClient(
                 SymbolMapper,
                 algorithm.Object?.Portfolio,
                 apiKey,
                 apiSecret,
                 apiUrl);
 
-            return new BinanceBrokerage(
+            return new BinanceFuturesBrokerage(
                     apiKey,
                     apiSecret,
                     apiUrl,
@@ -89,29 +86,28 @@ namespace QuantConnect.BinanceBrokerage.Tests
         /// Gets the symbol to be traded, must be shortable
         /// </summary>
         protected override Symbol Symbol => StaticSymbol;
-        private static Symbol StaticSymbol => Symbol.Create("ETHBTC", SecurityType.Crypto, Market.Binance);
+        private static Symbol StaticSymbol => Symbol.Create("XRPUSDT", SecurityType.CryptoFuture, Market.Binance);
 
         /// <summary>
         /// Gets the security type associated with the <see cref="BrokerageTests.Symbol" />
         /// </summary>
         protected override SecurityType SecurityType => Symbol.SecurityType;
 
-        public static TestCaseData[] OrderParameters => new[]
+        public static TestCaseData[] OrderParametersFutures => new[]
         {
             new TestCaseData(new MarketOrderTestParameters(StaticSymbol)).SetName("MarketOrder"),
             new TestCaseData(new LimitOrderTestParameters(StaticSymbol, HighPrice, LowPrice)).SetName("LimitOrder"),
-            new TestCaseData(new StopLimitOrderTestParameters(StaticSymbol, HighPrice, LowPrice)).SetName("StopLimitOrder"),
         };
 
         /// <summary>
         /// Gets a high price for the specified symbol so a limit sell won't fill
         /// </summary>
-        private const decimal HighPrice = 0.04m;
+        private const decimal HighPrice = 0.5m;
 
         /// <summary>
         /// Gets a low price for the specified symbol so a limit buy won't fill
         /// </summary>
-        private const decimal LowPrice = 0.01m;
+        private const decimal LowPrice = 0.2m;
 
         /// <summary>
         /// Gets the current market price of the specified security
@@ -133,78 +129,57 @@ namespace QuantConnect.BinanceBrokerage.Tests
         protected override bool IsAsync() => false;
 
         /// <summary>
-        /// Gets the default order quantity. Min order 10USD.
+        /// Gets the default order quantity. Min order 5USD.
         /// </summary>
-        protected override decimal GetDefaultQuantity() => 0.01m;
+        protected override decimal GetDefaultQuantity() => 30m;
 
         [Explicit("This test requires a configured and testable Binance practice account")]
-        [Test, TestCaseSource(nameof(OrderParameters))]
+        [Test, TestCaseSource(nameof(OrderParametersFutures))]
         public override void CancelOrders(OrderTestParameters parameters)
         {
             base.CancelOrders(parameters);
         }
 
         [Explicit("This test requires a configured and testable Binance practice account")]
-        [Test, TestCaseSource(nameof(OrderParameters))]
+        [Test, TestCaseSource(nameof(OrderParametersFutures))]
         public override void LongFromZero(OrderTestParameters parameters)
         {
             base.LongFromZero(parameters);
         }
 
         [Explicit("This test requires a configured and testable Binance practice account")]
-        [Test, TestCaseSource(nameof(OrderParameters))]
+        [Test, TestCaseSource(nameof(OrderParametersFutures))]
         public override void CloseFromLong(OrderTestParameters parameters)
         {
             base.CloseFromLong(parameters);
         }
 
         [Explicit("This test requires a configured and testable Binance practice account")]
-        [Test, TestCaseSource(nameof(OrderParameters))]
+        [Test, TestCaseSource(nameof(OrderParametersFutures))]
         public override void ShortFromZero(OrderTestParameters parameters)
         {
             base.ShortFromZero(parameters);
         }
 
         [Explicit("This test requires a configured and testable Binance practice account")]
-        [Test, TestCaseSource(nameof(OrderParameters))]
+        [Test, TestCaseSource(nameof(OrderParametersFutures))]
         public override void CloseFromShort(OrderTestParameters parameters)
         {
             base.CloseFromShort(parameters);
         }
 
         [Explicit("This test requires a configured and testable Binance practice account")]
-        [Test, TestCaseSource(nameof(OrderParameters))]
+        [Test, TestCaseSource(nameof(OrderParametersFutures))]
         public override void ShortFromLong(OrderTestParameters parameters)
         {
             base.ShortFromLong(parameters);
         }
 
         [Explicit("This test requires a configured and testable Binance practice account")]
-        [Test, TestCaseSource(nameof(OrderParameters))]
+        [Test, TestCaseSource(nameof(OrderParametersFutures))]
         public override void LongFromShort(OrderTestParameters parameters)
         {
             base.LongFromShort(parameters);
-        }
-
-        [Test, Ignore("Holdings are now set to 0 swaps at the start of each launch. Not meaningful.")]
-        public override void GetAccountHoldings()
-        {
-            Log.Trace("");
-            Log.Trace("GET ACCOUNT HOLDINGS");
-            Log.Trace("");
-            var before = Brokerage.GetAccountHoldings();
-            Assert.AreEqual(0, before.Count());
-
-            PlaceOrderWaitForStatus(new MarketOrder(Symbol, GetDefaultQuantity(), DateTime.Now));
-            Thread.Sleep(3000);
-
-            var after = Brokerage.GetAccountHoldings();
-            Assert.AreEqual(0, after.Count());
-        }
-
-        protected override void ModifyOrderUntilFilled(Order order, OrderTestParameters parameters, double secondsTimeout = 90)
-        {
-            Assert.Pass("Order update not supported. Please cancel and re-create.");
         }
     }
 }

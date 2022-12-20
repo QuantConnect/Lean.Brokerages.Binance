@@ -1,4 +1,4 @@
-/*
+﻿/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  *
@@ -13,33 +13,20 @@
  * limitations under the License.
 */
 
+using System.Collections.Generic;
+
 namespace QuantConnect.BinanceBrokerage.Messages
 {
-#pragma warning disable 1591
-    public class BalanceEntry
+    internal class FuturesAccountInformation
     {
-        public string Asset { get; set; }
-        public decimal Free { get; set; }
-        public decimal Locked { get; set; }
-        public virtual decimal Amount { get; }
+        public List<FutureBalance> Assets { get; set; }
+        public List<FuturePosition> Positions { get; set; }
     }
 
-    public class SpotBalance : BalanceEntry
+    internal class FuturePosition
     {
-        public override decimal Amount => Free + Locked;
+        public  string Symbol { get; set; }
+        public decimal PositionAmt { get; set; }
+        public decimal EntryPrice { get; set; }
     }
-
-    public class MarginBalance : BalanceEntry
-    {
-        public decimal Borrowed { get; set; }
-        public decimal NetAsset { get; set; }
-        public override decimal Amount => NetAsset;
-    }
-
-    public class FutureBalance : BalanceEntry
-    {
-        public decimal WalletBalance { get; set; }
-        public override decimal Amount => WalletBalance;
-    }
-#pragma warning restore 1591
 }

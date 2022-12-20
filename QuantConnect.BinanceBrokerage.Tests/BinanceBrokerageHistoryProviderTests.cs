@@ -52,10 +52,55 @@ namespace QuantConnect.BinanceBrokerage.Tests
         [TestCaseSource(nameof(InvalidHistory))]
         public virtual void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, bool throwsException)
         {
+            BaseHistoryTest(symbol, resolution, period, throwsException, _brokerage);
+        }
+
+        [Test]
+        [TestCaseSource(nameof(NoHistory))]
+        public virtual void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
+        {
+            BaseEmptyHistoryTest(symbol, resolution, period, tickType, _brokerage);
+        }
+
+        public static void BaseEmptyHistoryTest(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType, Brokerage brokerage)
+        {
             TestDelegate test = () =>
             {
-                var brokerage = (BinanceBrokerage)_brokerage;
+                var historyProvider = new BrokerageHistoryProvider();
+                historyProvider.SetBrokerage(brokerage);
+                historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null, null, null, null, null, false, new DataPermissionManager()));
 
+                var now = DateTime.UtcNow;
+
+                var requests = new[]
+                {
+                    new HistoryRequest(now.Add(-period),
+                                       now,
+                                       typeof(TradeBar),
+                                       symbol,
+                                       resolution,
+                                       SecurityExchangeHours.AlwaysOpen(TimeZones.Utc),
+                                       DateTimeZone.Utc,
+                                       Resolution.Minute,
+                                       false,
+                                       false,
+                                       DataNormalizationMode.Adjusted,
+                                       tickType)
+                };
+
+                var history = historyProvider.GetHistory(requests, TimeZones.Utc).ToList();
+
+                Log.Trace("Data points retrieved: " + historyProvider.DataPointCount);
+                Assert.AreEqual(0, historyProvider.DataPointCount);
+            };
+
+            Assert.DoesNotThrow(test);
+        }
+
+        public static void BaseHistoryTest(Symbol symbol, Resolution resolution, TimeSpan period, bool throwsException, Brokerage brokerage)
+        {
+            TestDelegate test = () =>
+            {
                 var historyProvider = new BrokerageHistoryProvider();
                 historyProvider.SetBrokerage(brokerage);
                 historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null, null, null, null, null, false, new DataPermissionManager()));
@@ -97,7 +142,8 @@ namespace QuantConnect.BinanceBrokerage.Tests
                     }
                 }
 
-                Log.Trace("Data points retrieved: " + historyProvider.DataPointCount);
+                Assert.Greater(historyProvider.DataPointCount, 0);
+                Log.Debug("Data points retrieved: " + historyProvider.DataPointCount);
             };
 
             if (throwsException)
@@ -108,45 +154,6 @@ namespace QuantConnect.BinanceBrokerage.Tests
             {
                 Assert.DoesNotThrow(test);
             }
-        }
-
-        [Test]
-        [TestCaseSource(nameof(NoHistory))]
-        public virtual void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
-        {
-            TestDelegate test = () =>
-            {
-                var brokerage = (BinanceBrokerage)_brokerage;
-
-                var historyProvider = new BrokerageHistoryProvider();
-                historyProvider.SetBrokerage(brokerage);
-                historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null, null, null, null, null,false, new DataPermissionManager()));
-
-                var now = DateTime.UtcNow;
-
-                var requests = new[]
-                {
-                    new HistoryRequest(now.Add(-period),
-                                       now,
-                                       typeof(TradeBar),
-                                       symbol,
-                                       resolution,
-                                       SecurityExchangeHours.AlwaysOpen(TimeZones.Utc),
-                                       DateTimeZone.Utc,
-                                       Resolution.Minute,
-                                       false,
-                                       false,
-                                       DataNormalizationMode.Adjusted,
-                                       tickType)
-                };
-
-                var history = historyProvider.GetHistory(requests, TimeZones.Utc).ToList();
-
-                Log.Trace("Data points retrieved: " + historyProvider.DataPointCount);
-                Assert.AreEqual(0, historyProvider.DataPointCount);
-            };
-
-            Assert.DoesNotThrow(test);
         }
 
         private static TestCaseData[] ValidHistory
@@ -183,13 +190,13 @@ namespace QuantConnect.BinanceBrokerage.Tests
                 return new[]
                 {
                     // invalid period, no error, empty result
-                    new TestCaseData(Symbols.EURUSD, Resolution.Daily, TimeSpan.FromDays(-15), true),
+                    new TestCaseData(Symbols.EURUSD, Resolution.Daily, TimeSpan.FromDays(-15), false),
 
                     // invalid symbol, throws "System.ArgumentException : Unknown symbol: XYZ"
                     new TestCaseData(Symbol.Create("XYZ", SecurityType.Crypto, Market.Binance), Resolution.Daily, TimeSpan.FromDays(15), true),
 
                     // invalid security type, throws "System.ArgumentException : Invalid security type: Equity"
-                    new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), true),
+                    new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), false),
                 };
             }
         }

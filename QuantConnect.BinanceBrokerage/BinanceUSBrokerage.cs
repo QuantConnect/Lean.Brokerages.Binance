@@ -21,14 +21,13 @@ using QuantConnect.Packets;
 namespace QuantConnect.BinanceBrokerage
 {
     /// <summary>
-    /// Binance brokerage implementation
+    /// Binance US brokerage implementation
     /// </summary>
     [BrokerageFactory(typeof(BinanceUSBrokerageFactory))]
     public class BinanceUSBrokerage : BinanceBrokerage
     {
         public BinanceUSBrokerage() : base(Market.BinanceUS)
         {
-
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  *
@@ -13,19 +13,17 @@
  * limitations under the License.
 */
 
-using Newtonsoft.Json;
 using QuantConnect.Brokerages;
 using QuantConnect.Securities;
-using QuantConnect.BinanceBrokerage.Converters;
 
 namespace QuantConnect.BinanceBrokerage
 {
     /// <summary>
-    /// Binance Spot REST API implementation
+    /// Binance Coin Futures REST API implementation
     /// </summary>
-    public class BinanceSpotRestApiClient : BinanceBaseRestApiClient
+    public class BinanceCoinFuturesRestApiClient : BinanceFuturesRestApiClient
     {
-        private const string _prefix = "/api/v3";
+        private const string _prefix = "/dapi/v1";
 
         /// <summary>
         /// The Api prefix
@@ -39,10 +37,7 @@ namespace QuantConnect.BinanceBrokerage
         /// <remarks>Depends on SPOT,MARGIN, Futures trading</remarks>
         protected override string WsPrefix => _prefix;
 
-        /// <summary>
-        /// Creates a new instance
-        /// </summary>
-        public BinanceSpotRestApiClient(
+        public BinanceCoinFuturesRestApiClient(
             ISymbolMapper symbolMapper,
             ISecurityProvider securityProvider,
             string apiKey,
@@ -52,7 +47,5 @@ namespace QuantConnect.BinanceBrokerage
             : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl)
         {
         }
-
-        protected override JsonConverter CreateAccountConverter() => new SpotAccountConverter();
     }
 }

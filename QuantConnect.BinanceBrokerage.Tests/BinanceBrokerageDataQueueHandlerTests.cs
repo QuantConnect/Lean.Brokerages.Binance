@@ -16,7 +16,9 @@
 using NUnit.Framework;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
+using QuantConnect.Interfaces;
 using QuantConnect.Logging;
+using System;
 using System.Threading;
 
 namespace QuantConnect.BinanceBrokerage.Tests
@@ -43,13 +45,13 @@ namespace QuantConnect.BinanceBrokerage.Tests
         [Test, TestCaseSource(nameof(TestParameters))]
         public virtual void StreamsDataTest(Symbol symbol, Resolution resolution, bool throwsException)
         {
-            StreamsData(symbol, resolution, throwsException);
+            StreamsData(symbol, resolution, throwsException, Brokerage);
         }
 
-        protected void StreamsData(Symbol symbol, Resolution resolution, bool throwsException)
+        public static void StreamsData(Symbol symbol, Resolution resolution, bool throwsException, IBrokerage brokerageInstance)
         {
             var cancelationToken = new CancellationTokenSource();
-            var brokerage = (BinanceBrokerage)Brokerage;
+            var brokerage = (BinanceBrokerage)brokerageInstance;
 
             SubscriptionDataConfig[] configs;
             if (resolution == Resolution.Tick)
@@ -69,6 +71,8 @@ namespace QuantConnect.BinanceBrokerage.Tests
                 };
             }
 
+            var trade = new ManualResetEvent(false);
+            var quote = new ManualResetEvent(false);
             foreach (var config in configs)
             {
                 ProcessFeed(brokerage.Subscribe(config, (s, e) =>
@@ -79,19 +83,28 @@ namespace QuantConnect.BinanceBrokerage.Tests
                     {
                         if (baseData != null)
                         {
-                            Log.Trace("{baseData}");
+                            if((baseData as Tick)?.TickType == TickType.Quote || baseData is QuoteBar)
+                            {
+                                quote.Set();
+                            }
+                            else if ((baseData as Tick)?.TickType == TickType.Trade || baseData is TradeBar)
+                            {
+                                trade.Set();
+                            }
+                            Log.Debug("{baseData}");
                         }
                     });
             }
 
-            Thread.Sleep(20000);
+            Assert.IsTrue(trade.WaitOne(resolution.ToTimeSpan() + TimeSpan.FromSeconds(30)));
+            Assert.IsTrue(quote.WaitOne(resolution.ToTimeSpan() + TimeSpan.FromSeconds(30)));
 
             foreach (var config in configs)
             {
                 brokerage.Unsubscribe(config);
             }
 
-            Thread.Sleep(20000);
+            Thread.Sleep(2000);
 
             cancelationToken.Cancel();
         }

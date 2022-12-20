@@ -60,12 +60,12 @@ namespace QuantConnect.BinanceBrokerage
         private Timer _keepAliveTimer;
         private Timer _reconnectTimer;
         private Lazy<BinanceBaseRestApiClient> _apiClientLazy;
-        private BinanceBaseRestApiClient ApiClient => _apiClientLazy?.Value;
 
         private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
 
         private const int MaximumSymbolsPerConnection = 512;
 
+        protected BinanceBaseRestApiClient ApiClient => _apiClientLazy?.Value;
         protected string MarketName { get; set; }
 
         /// <summary>
@@ -163,9 +163,14 @@ namespace QuantConnect.BinanceBrokerage
         /// <summary>
         /// Gets all open positions
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The list of all account holdings</returns>
         public override List<Holding> GetAccountHoldings()
         {
+            var holdings = ApiClient.GetAccountHoldings();
+            if(holdings.Count > 0)
+            {
+                return holdings;
+            }
             return base.GetAccountHoldings(_job?.BrokerageData, _algorithm.Securities.Values);
         }
 
@@ -195,7 +200,7 @@ namespace QuantConnect.BinanceBrokerage
             foreach (var item in orders)
             {
                 var orderQuantity = item.Quantity;
-                var orderLeanSymbol = _symbolMapper.GetLeanSymbol(item.Symbol, SecurityType.Crypto, MarketName);
+                var orderLeanSymbol = _symbolMapper.GetLeanSymbol(item.Symbol, GetSupportedSecurityType(), MarketName);
                 var orderTime = Time.UnixMillisecondTimeStampToDateTime(item.Time);
 
                 Order order;
@@ -300,10 +305,17 @@ namespace QuantConnect.BinanceBrokerage
                 yield break;
             }
 
+            if (request.Symbol.SecurityType != GetSupportedSecurityType())
+            {
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidSecurityType",
+                    $"{request.Symbol.SecurityType} security type not supported, no history returned"));
+                yield break;
+            }
+
             var period = request.Resolution.ToTimeSpan();
             var restApiClient = _apiClientLazy?.IsValueCreated == true
                 ? ApiClient
-                : new BinanceSpotRestApiClient(_symbolMapper, null, null, null, Config.Get("binance-api-url", "https://api.binance.com"));
+                : GetApiClient(_symbolMapper, null, null, null, null);
             foreach (var kline in restApiClient.GetHistory(request))
             {
                 yield return new TradeBar()
@@ -404,8 +416,16 @@ namespace QuantConnect.BinanceBrokerage
         private bool CanSubscribe(Symbol symbol)
         {
             return !symbol.Value.Contains("UNIVERSE") &&
-                   symbol.SecurityType == SecurityType.Crypto &&
+                   symbol.SecurityType == GetSupportedSecurityType() &&
                    symbol.ID.Market == MarketName;
+        }
+
+        /// <summary>
+        /// Get's the supported security type by the brokerage
+        /// </summary>
+        protected virtual SecurityType GetSupportedSecurityType()
+        {
+            return SecurityType.Crypto;
         }
 
         #endregion IDataQueueHandler
@@ -489,10 +509,7 @@ namespace QuantConnect.BinanceBrokerage
                 // and user brokerage choise is actually applied
                 _apiClientLazy = new Lazy<BinanceBaseRestApiClient>(() =>
                 {
-                    BinanceBaseRestApiClient apiClient = _algorithm.BrokerageModel.AccountType == AccountType.Cash
-                        ? new BinanceSpotRestApiClient(_symbolMapper, algorithm?.Portfolio, apiKey, apiSecret, restApiUrl)
-                        : new BinanceCrossMarginRestApiClient(_symbolMapper, algorithm?.Portfolio, apiKey, apiSecret,
-                            restApiUrl);
+                    var apiClient = GetApiClient(_symbolMapper, _algorithm?.Portfolio, restApiUrl, apiKey, apiSecret);
 
                     apiClient.OrderSubmit += (s, e) => OnOrderSubmit(e);
                     apiClient.OrderStatusChanged += (s, e) => OnOrderEvent(e);
@@ -546,20 +563,35 @@ namespace QuantConnect.BinanceBrokerage
         }
 
         /// <summary>
+        /// Get's the appropiate API client to use
+        /// </summary>
+        protected virtual BinanceBaseRestApiClient GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider,
+            string restApiUrl, string apiKey, string apiSecret)
+        {
+            restApiUrl ??= Config.Get("binance-api-url", "https://api.binance.com");
+
+            return (_algorithm == null || _algorithm.BrokerageModel.AccountType == AccountType.Cash)
+                 ? new BinanceSpotRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl)
+                 : new BinanceCrossMarginRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret,
+                     restApiUrl);
+        }
+
+        /// <summary>
         /// Subscribes to the requested symbol (using an individual streaming channel)
         /// </summary>
         /// <param name="webSocket">The websocket instance</param>
         /// <param name="symbol">The symbol to subscribe</param>
         private bool Subscribe(IWebSocket webSocket, Symbol symbol)
         {
+            var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
             Send(webSocket,
                 new
                 {
                     method = "SUBSCRIBE",
                     @params = new[]
                     {
-                        $"{symbol.Value.ToLowerInvariant()}@trade",
-                        $"{symbol.Value.ToLowerInvariant()}@bookTicker"
+                        $"{brokerageSymbol.ToLowerInvariant()}@trade",
+                        $"{brokerageSymbol.ToLowerInvariant()}@bookTicker"
                     },
                     id = GetNextRequestId()
                 }
@@ -575,14 +607,15 @@ namespace QuantConnect.BinanceBrokerage
         /// <param name="symbol">The symbol to unsubscribe</param>
         private bool Unsubscribe(IWebSocket webSocket, Symbol symbol)
         {
+            var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
             Send(webSocket,
                 new
                 {
                     method = "UNSUBSCRIBE",
                     @params = new[]
                     {
-                        $"{symbol.Value.ToLowerInvariant()}@trade",
-                        $"{symbol.Value.ToLowerInvariant()}@bookTicker"
+                        $"{brokerageSymbol.ToLowerInvariant()}@trade",
+                        $"{brokerageSymbol.ToLowerInvariant()}@bookTicker"
                     },
                     id = GetNextRequestId()
                 }
@@ -597,7 +630,10 @@ namespace QuantConnect.BinanceBrokerage
 
             _webSocketRateLimiter.WaitToProceed();
 
-            Log.Trace("Send: " + json);
+            if (Log.DebuggingEnabled)
+            {
+                Log.Debug("BinanceBrokerage.Send(): " + json);
+            }
             webSocket.Send(json);
         }
 
@@ -625,7 +661,7 @@ namespace QuantConnect.BinanceBrokerage
         {
             try
             {
-                var restClient = new BinanceSpotRestApiClient(_symbolMapper, null, null, null, restApiUrl);
+                var restClient = GetApiClient(_symbolMapper, null, restApiUrl, null, null);
                 var symbolAndTradeCount = restClient.GetTickerPriceChangeStatistics();
 
                 var result = new Dictionary<Symbol, int>();
@@ -633,7 +669,7 @@ namespace QuantConnect.BinanceBrokerage
                 {
                     try
                     {
-                        result[_symbolMapper.GetLeanSymbol(s.Symbol, SecurityType.Crypto, MarketName)] = s.Count;
+                        result[_symbolMapper.GetLeanSymbol(s.Symbol, GetSupportedSecurityType(), MarketName)] = s.Count;
                     }
                     catch
                     {

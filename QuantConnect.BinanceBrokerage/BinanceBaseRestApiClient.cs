@@ -39,17 +39,32 @@ namespace QuantConnect.BinanceBrokerage
     /// </summary>
     public abstract class BinanceBaseRestApiClient : IDisposable
     {
-        // depends on SPOT or MARGIN trading
-        private readonly string _apiPrefix;
-        private readonly string _wsPrefix;
-
-        private string UserDataStreamEndpoint => $"{_wsPrefix}/userDataStream";
-
-        private readonly ISymbolMapper _symbolMapper;
         private readonly ISecurityProvider _securityProvider;
         private readonly IRestClient _restClient;
         private readonly RateGate _restRateLimiter = new(10, TimeSpan.FromSeconds(1));
         private readonly object _listenKeyLocker = new();
+
+        /// <summary>
+        /// The symbol mapper instance
+        /// </summary>
+        protected ISymbolMapper SymbolMapper { get; }
+
+        /// <summary>
+        /// The Api prefix
+        /// </summary>
+        /// <remarks>Depends on SPOT,MARGIN, Futures trading</remarks>
+        protected virtual string ApiPrefix { get; }
+
+        /// <summary>
+        /// The websocket prefix
+        /// </summary>
+        /// <remarks>Depends on SPOT,MARGIN, Futures trading</remarks>
+        protected virtual string WsPrefix { get; }
+
+        /// <summary>
+        /// The user data stream endpoint
+        /// </summary>
+        protected virtual string UserDataStreamEndpoint => $"{WsPrefix}/userDataStream";
 
         /// <summary>
         /// Event that fires each time an order is filled
@@ -94,31 +109,25 @@ namespace QuantConnect.BinanceBrokerage
         /// <param name="apiKey">The Binance API key</param>
         /// <param name="apiSecret">The The Binance API secret</param>
         /// <param name="restApiUrl">The Binance API rest url</param>
-        /// <param name="restApiPrefix">REST API path prefix depending on SPOT or CROSS MARGIN trading</param>
-        /// <param name="wsApiPrefix">REST API path prefix for user data streaming auth process depending on SPOT or CROSS MARGIN trading</param>
         public BinanceBaseRestApiClient(
             ISymbolMapper symbolMapper,
             ISecurityProvider securityProvider,
             string apiKey,
             string apiSecret,
-            string restApiUrl,
-            string restApiPrefix,
-            string wsApiPrefix)
+            string restApiUrl)
         {
-            _symbolMapper = symbolMapper;
+            SymbolMapper = symbolMapper;
             _securityProvider = securityProvider;
             _restClient = new RestClient(restApiUrl);
             ApiKey = apiKey;
             ApiSecret = apiSecret;
-            _apiPrefix = restApiPrefix;
-            _wsPrefix = wsApiPrefix;
         }
 
         /// <summary>
         /// Gets all open positions
         /// </summary>
-        /// <returns></returns>
-        public List<Holding> GetAccountHoldings()
+        /// <returns>The list of all account holdings</returns>
+        public virtual List<Holding> GetAccountHoldings()
         {
             return new List<Holding>();
         }
@@ -130,7 +139,7 @@ namespace QuantConnect.BinanceBrokerage
         public BalanceEntry[] GetCashBalance()
         {
             var queryString = $"timestamp={GetNonce()}";
-            var endpoint = $"{_apiPrefix}/account?{queryString}&signature={AuthenticationToken(queryString)}";
+            var endpoint = $"{ApiPrefix}/account?{queryString}&signature={AuthenticationToken(queryString)}";
             var request = new RestRequest(endpoint, Method.GET);
             request.AddHeader(KeyHeader, ApiKey);
 
@@ -161,7 +170,7 @@ namespace QuantConnect.BinanceBrokerage
         public IEnumerable<Messages.OpenOrder> GetOpenOrders()
         {
             var queryString = $"timestamp={GetNonce()}";
-            var endpoint = $"{_apiPrefix}/openOrders?{queryString}&signature={AuthenticationToken(queryString)}";
+            var endpoint = $"{ApiPrefix}/openOrders?{queryString}&signature={AuthenticationToken(queryString)}";
             var request = new RestRequest(endpoint, Method.GET);
             request.AddHeader(KeyHeader, ApiKey);
 
@@ -185,7 +194,7 @@ namespace QuantConnect.BinanceBrokerage
 
             body["timestamp"] = GetNonce();
             body["signature"] = AuthenticationToken(body.ToQueryString());
-            var request = new RestRequest($"{_apiPrefix}/order", Method.POST);
+            var request = new RestRequest($"{ApiPrefix}/order", Method.POST);
             request.AddHeader(KeyHeader, ApiKey);
             request.AddParameter(
                 "application/x-www-form-urlencoded",
@@ -238,7 +247,7 @@ namespace QuantConnect.BinanceBrokerage
             // use GTC as LEAN doesn't support others yet
             var body = new Dictionary<string, object>
             {
-                { "symbol", _symbolMapper.GetBrokerageSymbol(order.Symbol) },
+                { "symbol", SymbolMapper.GetBrokerageSymbol(order.Symbol) },
                 { "quantity", Math.Abs(order.Quantity).ToString(CultureInfo.InvariantCulture) },
                 { "side", ConvertOrderDirection(order.Direction) }
             };
@@ -258,6 +267,10 @@ namespace QuantConnect.BinanceBrokerage
                     body["type"] = "MARKET";
                     break;
                 case StopLimitOrder stopLimitOrder:
+                    if (order.SecurityType == SecurityType.CryptoFuture)
+                    {
+                        throw new NotSupportedException($"BinanceBrokerage.ConvertOrderType: Unsupported order type: {order.Type} for {SecurityType.CryptoFuture}");
+                    }
                     var ticker = GetTickerPrice(order);
                     var stopPrice = stopLimitOrder.StopPrice;
                     if (order.Direction == OrderDirection.Sell)
@@ -290,7 +303,7 @@ namespace QuantConnect.BinanceBrokerage
             var success = new List<bool>();
             IDictionary<string, object> body = new Dictionary<string, object>()
             {
-                { "symbol", _symbolMapper.GetBrokerageSymbol(order.Symbol) }
+                { "symbol", SymbolMapper.GetBrokerageSymbol(order.Symbol) }
             };
             foreach (var id in order.BrokerId)
             {
@@ -302,7 +315,7 @@ namespace QuantConnect.BinanceBrokerage
                 body["timestamp"] = GetNonce();
                 body["signature"] = AuthenticationToken(body.ToQueryString());
 
-                var request = new RestRequest($"{_apiPrefix}/order", Method.DELETE);
+                var request = new RestRequest($"{ApiPrefix}/order", Method.DELETE);
                 request.AddHeader(KeyHeader, ApiKey);
                 request.AddParameter(
                     "application/x-www-form-urlencoded",
@@ -337,11 +350,11 @@ namespace QuantConnect.BinanceBrokerage
         {
             var resolution = ConvertResolution(request.Resolution);
             var resolutionInMs = (long)request.Resolution.ToTimeSpan().TotalMilliseconds;
-            var symbol = _symbolMapper.GetBrokerageSymbol(request.Symbol);
+            var symbol = SymbolMapper.GetBrokerageSymbol(request.Symbol);
             var startMs = (long)Time.DateTimeToUnixTimeStamp(request.StartTimeUtc) * 1000;
             var endMs = (long)Time.DateTimeToUnixTimeStamp(request.EndTimeUtc) * 1000;
 
-            var endpoint = $"/api/v3/klines?symbol={symbol}&interval={resolution}&limit=1000";
+            var endpoint = $"{GetBaseDataEndpoint()}/klines?symbol={symbol}&interval={resolution}&limit=1000";
             if (_restClient?.BaseUrl?.Host.Equals("testnet.binance.vision") == true)
             {
                 // we always use the global endpoint for history requests, as not binance testnet available
@@ -393,7 +406,7 @@ namespace QuantConnect.BinanceBrokerage
         /// </summary>
         public PriceChangeStatistics[] GetTickerPriceChangeStatistics()
         {
-            var endpoint = $"{_apiPrefix}/ticker/24hr";
+            var endpoint = $"{ApiPrefix}/ticker/24hr";
             var request = new RestRequest(endpoint, Method.GET);
 
             var response = ExecuteRestRequest(request);
@@ -453,9 +466,9 @@ namespace QuantConnect.BinanceBrokerage
         /// Provides the current tickers price
         /// </summary>
         /// <returns></returns>
-        public Messages.PriceTicker[] GetTickers()
+        public PriceTicker[] GetTickers()
         {
-            const string endpoint = "/api/v3/ticker/price";
+            var endpoint = $"{GetBaseDataEndpoint()}/ticker/price";
             var req = new RestRequest(endpoint, Method.GET);
             var response = ExecuteRestRequest(req);
             if (response.StatusCode != HttpStatusCode.OK)
@@ -463,7 +476,7 @@ namespace QuantConnect.BinanceBrokerage
                 throw new Exception($"BinanceBrokerage.GetTick: request failed: [{(int)response.StatusCode}] {response.StatusDescription}, Content: {response.Content}, ErrorMessage: {response.ErrorMessage}");
             }
 
-            return JsonConvert.DeserializeObject<Messages.PriceTicker[]>(response.Content);
+            return JsonConvert.DeserializeObject<PriceTicker[]>(response.Content);
         }
 
         /// <summary>
@@ -495,13 +508,18 @@ namespace QuantConnect.BinanceBrokerage
             _restRateLimiter.DisposeSafely();
         }
 
+        protected virtual string GetBaseDataEndpoint()
+        {
+            return "/api/v3";
+        }
+
         /// <summary>
         /// If an IP address exceeds a certain number of requests per minute
         /// HTTP 429 return code is used when breaking a request rate limit.
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        private IRestResponse ExecuteRestRequest(IRestRequest request)
+        protected IRestResponse ExecuteRestRequest(IRestRequest request)
         {
             const int maxAttempts = 10;
             var attempts = 0;
@@ -530,7 +548,7 @@ namespace QuantConnect.BinanceBrokerage
             var tickerPrice = order.Direction == OrderDirection.Buy ? security.AskPrice : security.BidPrice;
             if (tickerPrice == 0)
             {
-                var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(order.Symbol);
+                var brokerageSymbol = SymbolMapper.GetBrokerageSymbol(order.Symbol);
                 var tickers = GetTickers();
                 var ticker = tickers.FirstOrDefault(t => t.Symbol == brokerageSymbol);
                 if (ticker == null)
@@ -546,7 +564,7 @@ namespace QuantConnect.BinanceBrokerage
         /// Timestamp in milliseconds
         /// </summary>
         /// <returns></returns>
-        private long GetNonce()
+        protected long GetNonce()
         {
             return (long)(Time.TimeStamp() * 1000);
         }
@@ -556,7 +574,7 @@ namespace QuantConnect.BinanceBrokerage
         /// </summary>
         /// <param name="payload">the body of the request</param>
         /// <returns>a token representing the request params</returns>
-        private string AuthenticationToken(string payload)
+        protected string AuthenticationToken(string payload)
         {
             using (HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(ApiSecret)))
             {
