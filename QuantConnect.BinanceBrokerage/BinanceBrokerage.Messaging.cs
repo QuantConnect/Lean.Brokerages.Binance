@@ -20,7 +20,6 @@ using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
 using QuantConnect.Securities;
 using System;
-using System.Linq;
 using Newtonsoft.Json.Linq;
 using QuantConnect.Brokerages;
 using QuantConnect.Data;
@@ -177,10 +176,11 @@ namespace QuantConnect.BinanceBrokerage
         {
             try
             {
-                var order = FindOrderByExternalId(data.OrderId);
+                var order = _algorithm.Transactions.GetOrderByBrokerageId(data.OrderId);
                 if (order == null)
                 {
                     // not our order, nothing else to do here
+                    Log.Error($"BinanceBrokerage.OnFillOrder(): order not found: {data.OrderId}");
                     return;
                 }
 
@@ -196,12 +196,6 @@ namespace QuantConnect.BinanceBrokerage
                     orderFee, $"Binance Order Event {data.Direction}"
                 );
 
-                if (status == OrderStatus.Filled)
-                {
-                    Orders.Order outOrder;
-                    CachedOrderIDs.TryRemove(order.Id, out outOrder);
-                }
-
                 OnOrderEvent(orderEvent);
             }
             catch (Exception e)
@@ -209,19 +203,6 @@ namespace QuantConnect.BinanceBrokerage
                 Log.Error(e);
                 throw;
             }
-        }
-
-        private Orders.Order FindOrderByExternalId(string brokerId)
-        {
-            var order = CachedOrderIDs
-                    .FirstOrDefault(o => o.Value.BrokerId.Contains(brokerId))
-                    .Value;
-            if (order == null)
-            {
-                order = _algorithm.Transactions.GetOrderByBrokerageId(brokerId);
-            }
-
-            return order;
         }
     }
 }
