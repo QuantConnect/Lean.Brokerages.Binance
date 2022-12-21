@@ -24,7 +24,7 @@ namespace QuantConnect.BinanceBrokerage.Messages
         public override EventType @Event => EventType.Trade;
 
         [JsonProperty("T")]
-        public new long Time { get; set; }
+        public override long Time { get; set; }
 
         [JsonProperty("p")]
         public decimal Price { get; private set; }

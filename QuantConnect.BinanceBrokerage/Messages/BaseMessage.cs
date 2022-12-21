@@ -27,7 +27,7 @@ namespace QuantConnect.BinanceBrokerage.Messages
         public string EventName { get; set; }
 
         [JsonProperty("E")]
-        public long Time { get; set; }
+        public virtual long Time { get; set; }
 
         [JsonProperty("s")]
         public string Symbol { get; set; }

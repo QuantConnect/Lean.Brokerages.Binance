@@ -115,6 +115,8 @@ namespace QuantConnect.BinanceBrokerage
                     {
                         case "trade":
                             var trade = objData.ToObject<Trade>();
+                            // futures feed send upper and lower case T confusing json
+                            trade.Time = objData["T"].ToObject<long>();
                             EmitTradeTick(
                                 _symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName),
                                 Time.UnixMillisecondTimeStampToDateTime(trade.Time),

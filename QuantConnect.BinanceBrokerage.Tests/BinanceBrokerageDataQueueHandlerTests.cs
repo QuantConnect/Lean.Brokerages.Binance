@@ -50,6 +50,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
 
         public static void StreamsData(Symbol symbol, Resolution resolution, bool throwsException, IBrokerage brokerageInstance)
         {
+            var startTime = DateTime.UtcNow;
             var cancelationToken = new CancellationTokenSource();
             var brokerage = (BinanceBrokerage)brokerageInstance;
 
@@ -83,6 +84,8 @@ namespace QuantConnect.BinanceBrokerage.Tests
                     {
                         if (baseData != null)
                         {
+                            Assert.GreaterOrEqual(baseData.EndTime.Ticks, startTime.Ticks);
+
                             if((baseData as Tick)?.TickType == TickType.Quote || baseData is QuoteBar)
                             {
                                 quote.Set();
