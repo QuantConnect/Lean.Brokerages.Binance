@@ -229,15 +229,6 @@ namespace QuantConnect.BinanceBrokerage
                 order.BrokerId.Add(item.Id);
                 order.Status = ConvertOrderStatus(item.Status);
 
-                if (order.Status.IsOpen())
-                {
-                    var cached = CachedOrderIDs.Where(c => c.Value.BrokerId.Contains(order.BrokerId.First())).ToList();
-                    if (cached.Any())
-                    {
-                        CachedOrderIDs[cached.First().Key] = order;
-                    }
-                }
-
                 list.Add(order);
             }
 
@@ -621,18 +612,10 @@ namespace QuantConnect.BinanceBrokerage
         /// <param name="e">The OrderEvent</param>
         private void OnOrderSubmit(BinanceOrderSubmitEventArgs e)
         {
-            var brokerId = e.BrokerId;
+            var brokerId = new List<string> { e.BrokerId };
             var order = e.Order;
-            if (CachedOrderIDs.ContainsKey(order.Id))
-            {
-                CachedOrderIDs[order.Id].BrokerId.Clear();
-                CachedOrderIDs[order.Id].BrokerId.Add(brokerId);
-            }
-            else
-            {
-                order.BrokerId.Add(brokerId);
-                CachedOrderIDs.TryAdd(order.Id, order);
-            }
+
+            OnOrderIdChangedEvent(new BrokerageOrderIdChangedEvent { BrokerId = brokerId, OrderId = order.Id });
         }
 
         /// <summary>
