@@ -19,11 +19,9 @@ using System.Linq;
 using QuantConnect.ToolBox;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
-using QuantConnect.Data.Fundamental;
 using QuantConnect.Data.Market;
 using QuantConnect.Util;
 using static QuantConnect.Configuration.ApplicationParser;
-using QuantConnect.Logging;
 
 namespace QuantConnect.BinanceBrokerage.ToolBox
 {

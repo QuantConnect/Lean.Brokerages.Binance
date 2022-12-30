@@ -1,4 +1,4 @@
-/*
+﻿/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  * 
@@ -18,13 +18,13 @@ using NUnit.Framework;
 namespace QuantConnect.BinanceBrokerage.Tests
 {
     [TestFixture]
-    public partial class BinanceUSBrokerageTests
+    public partial class BinanceCoinFuturesBrokerageTests
     {
         private static TestCaseData[] TestParameters
         {
             get
             {
-                var symbol = Symbol.Create("FTMUSDT", SecurityType.Crypto, Market.BinanceUS);
+                var symbol = Symbol.Create("BTCUSD", SecurityType.CryptoFuture, Market.Binance);
 
                 return new[]
                 {
@@ -37,9 +37,9 @@ namespace QuantConnect.BinanceBrokerage.Tests
         }
 
         [Test, TestCaseSource(nameof(TestParameters))]
-        public override void StreamsDataTest(Symbol symbol, Resolution resolution, bool throwsException)
+        public void StreamsDataTest(Symbol symbol, Resolution resolution, bool throwsException)
         {
-            StreamsData(symbol, resolution, throwsException, Brokerage);
+            BinanceBrokerageTests.StreamsData(symbol, resolution, throwsException, Brokerage);
         }
     }
 }

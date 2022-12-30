@@ -63,15 +63,21 @@ namespace QuantConnect.BinanceBrokerage
                 {
                     var eventType = objEventType.ToObject<string>();
 
+                    Execution execution = null;
                     switch (eventType)
                     {
                         case "executionReport":
-                            var upd = objData.ToObject<Execution>();
-                            if (upd.ExecutionType.Equals("TRADE", StringComparison.OrdinalIgnoreCase))
-                            {
-                                OnFillOrder(upd);
-                            }
+                            execution = objData.ToObject<Execution>();
                             break;
+                        case "ORDER_TRADE_UPDATE":
+                            execution = objData["o"].ToObject<Execution>();
+                            break;
+                    }
+
+                    if (execution != null && (execution.ExecutionType.Equals("TRADE", StringComparison.OrdinalIgnoreCase)
+                        || execution.ExecutionType.Equals("EXPIRED", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        OnFillOrder(execution);
                     }
                 }
             }
@@ -109,23 +115,23 @@ namespace QuantConnect.BinanceBrokerage
                     {
                         case "trade":
                             var trade = objData.ToObject<Trade>();
+                            // futures feed send upper and lower case T confusing json
+                            trade.Time = objData["T"].ToObject<long>();
                             EmitTradeTick(
-                                _symbolMapper.GetLeanSymbol(trade.Symbol, SecurityType.Crypto, MarketName),
+                                _symbolMapper.GetLeanSymbol(trade.Symbol, GetSupportedSecurityType(), MarketName),
                                 Time.UnixMillisecondTimeStampToDateTime(trade.Time),
                                 trade.Price,
                                 trade.Quantity);
+                            break;
+                        case "bookTicker":
+                            // futures stream the event type but spot doesn't, that's why we have the next 'else if'
+                            HandleQuoteTick(objData);
                             break;
                     }
                 }
                 else if (objData["u"] != null)
                 {
-                    var quote = objData.ToObject<BestBidAskQuote>();
-                    EmitQuoteTick(
-                        _symbolMapper.GetLeanSymbol(quote.Symbol, SecurityType.Crypto, MarketName),
-                        quote.BestBidPrice,
-                        quote.BestBidSize,
-                        quote.BestAskPrice,
-                        quote.BestAskSize);
+                    HandleQuoteTick(objData);
                 }
             }
             catch (Exception exception)
@@ -133,6 +139,17 @@ namespace QuantConnect.BinanceBrokerage
                 OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1, $"Parsing wss message failed. Data: {e.Message} Exception: {exception}"));
                 throw;
             }
+        }
+
+        private void HandleQuoteTick(JObject objData)
+        {
+            var quote = objData.ToObject<BestBidAskQuote>();
+            EmitQuoteTick(
+                _symbolMapper.GetLeanSymbol(quote.Symbol, GetSupportedSecurityType(), MarketName),
+                quote.BestBidPrice,
+                quote.BestBidSize,
+                quote.BestAskPrice,
+                quote.BestAskSize);
         }
 
         private void EmitQuoteTick(Symbol symbol, decimal bidPrice, decimal bidSize, decimal askPrice, decimal askSize)
@@ -187,7 +204,12 @@ namespace QuantConnect.BinanceBrokerage
                 var fillPrice = data.LastExecutedPrice;
                 var fillQuantity = data.Direction == OrderDirection.Sell ? -data.LastExecutedQuantity : data.LastExecutedQuantity;
                 var updTime = Time.UnixMillisecondTimeStampToDateTime(data.TransactionTime);
-                var orderFee = new OrderFee(new CashAmount(data.Fee, data.FeeCurrency));
+                var orderFee = OrderFee.Zero;
+                if (!string.IsNullOrEmpty(data.FeeCurrency))
+                {
+                    // might not be sent if zero fee
+                    orderFee = new OrderFee(new CashAmount(data.Fee, data.FeeCurrency));
+                }
                 var status = ConvertOrderStatus(data.OrderStatus);
                 var orderEvent = new OrderEvent
                 (

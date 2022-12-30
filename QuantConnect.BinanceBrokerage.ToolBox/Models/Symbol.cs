@@ -29,6 +29,8 @@ namespace QuantConnect.BinanceBrokerage.ToolBox.Models
 
         public string BaseAsset { get; set; }
         public string QuoteAsset { get; set; }
+        public string ContractType { get; set; }
+        public int ContractSize { get; set; }
 
         public bool IsSpotTradingAllowed { get; set; }
         public bool IsMarginTradingAllowed { get; set; }

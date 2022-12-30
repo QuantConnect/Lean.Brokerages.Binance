@@ -16,7 +16,6 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using QuantConnect.BinanceBrokerage.Converters;
-using QuantConnect.BinanceBrokerage.Messages;
 using QuantConnect.Brokerages;
 using QuantConnect.Securities;
 using Order = QuantConnect.Orders.Order;
@@ -24,26 +23,37 @@ using Order = QuantConnect.Orders.Order;
 namespace QuantConnect.BinanceBrokerage
 {
     /// <summary>
-    /// Binance REST API implementation
+    /// Binance Cross Margin REST API implementation
     /// </summary>
     public class BinanceCrossMarginRestApiClient : BinanceBaseRestApiClient
     {
-        private const string _apiPrefix = "/sapi/v1/margin";
-        private const string _wsPrefix = "/sapi/v1";
+        /// <summary>
+        /// The Api prefix
+        /// </summary>
+        /// <remarks>Depends on SPOT,MARGIN, Futures trading</remarks>
+        protected override string ApiPrefix => "/sapi/v1/margin";
 
+        /// <summary>
+        /// The websocket prefix
+        /// </summary>
+        /// <remarks>Depends on SPOT,MARGIN, Futures trading</remarks>
+        protected override string WsPrefix => "/sapi/v1";
+
+        /// <summary>
+        /// Creates a new instance
+        /// </summary>
         public BinanceCrossMarginRestApiClient(
-            SymbolPropertiesDatabaseSymbolMapper symbolMapper,
+            ISymbolMapper symbolMapper,
             ISecurityProvider securityProvider,
             string apiKey,
             string apiSecret,
             string restApiUrl
             )
-            : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, _apiPrefix, _wsPrefix)
+            : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl)
         {
         }
 
-        protected override JsonConverter CreateAccountConverter()
-            => new MarginAccountConverter();
+        protected override JsonConverter CreateAccountConverter() => new MarginAccountConverter();
 
         protected override IDictionary<string, object> CreateOrderBody(Order order)
         {
