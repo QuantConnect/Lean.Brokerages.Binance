@@ -64,7 +64,7 @@ namespace QuantConnect.BinanceBrokerage
         /// The brokerage model
         /// </summary>
         /// <param name="orderProvider">The order provider</param>
-        public override IBrokerageModel GetBrokerageModel(IOrderProvider orderProvider) => new BinanceCoinFuturesBrokerageModel();
+        public override IBrokerageModel GetBrokerageModel(IOrderProvider orderProvider) => new BinanceCoinFuturesBrokerageModel(AccountType.Margin);
 
         /// <summary>
         /// Create the Brokerage instance
