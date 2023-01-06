@@ -23,6 +23,7 @@ using System;
 using Newtonsoft.Json.Linq;
 using QuantConnect.Brokerages;
 using QuantConnect.Data;
+using System.Linq;
 
 namespace QuantConnect.BinanceBrokerage
 {
@@ -193,7 +194,7 @@ namespace QuantConnect.BinanceBrokerage
         {
             try
             {
-                var order = _algorithm.Transactions.GetOrderByBrokerageId(data.OrderId);
+                var order = _algorithm.Transactions.GetOrdersByBrokerageId(data.OrderId)?.SingleOrDefault();
                 if (order == null)
                 {
                     // not our order, nothing else to do here
