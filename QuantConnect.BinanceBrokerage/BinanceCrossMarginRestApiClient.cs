@@ -40,6 +40,11 @@ namespace QuantConnect.BinanceBrokerage
         protected override string WsPrefix => "/sapi/v1";
 
         /// <summary>
+        /// Ticker Price Change Statistics Endpoint
+        /// </summary>
+        protected override string TickerPriceChangeStatisticsEndpoint => "/api/v3/ticker/24hr";
+
+        /// <summary>
         /// Creates a new instance
         /// </summary>
         public BinanceCrossMarginRestApiClient(
