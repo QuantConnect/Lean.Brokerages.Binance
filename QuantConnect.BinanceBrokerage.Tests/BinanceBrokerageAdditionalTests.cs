@@ -39,6 +39,17 @@ namespace QuantConnect.BinanceBrokerage.Tests
             Assert.True(brokerage.IsConnected);
         }
 
+        [TestCase(typeof(BinanceCrossMarginRestApiClient),"https://api.binance.com")]
+        [TestCase(typeof(BinanceFuturesRestApiClient), "https://fapi.binance.com")]
+        [TestCase(typeof(BinanceCoinFuturesRestApiClient), "https://dapi.binance.com")]
+        public void TickerPriceChangeStatistics(Type restApiClient, string apiUrl)
+        {
+            var restClient = (BinanceBaseRestApiClient)Activator.CreateInstance(restApiClient, null, null, string.Empty, string.Empty, apiUrl);
+            var response = restClient.GetTickerPriceChangeStatistics();
+
+            Assert.AreNotEqual(0, response.Length);
+        }
+
         [Test]
         public void ConnectedIfNoAlgorithm()
         {

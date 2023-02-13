@@ -67,6 +67,11 @@ namespace QuantConnect.BinanceBrokerage
         protected virtual string UserDataStreamEndpoint => $"{WsPrefix}/userDataStream";
 
         /// <summary>
+        /// Ticker Price Change Statistics Endpoint
+        /// </summary>
+        protected virtual string TickerPriceChangeStatisticsEndpoint => $"{ApiPrefix}/ticker/24hr";
+
+        /// <summary>
         /// Event that fires each time an order is filled
         /// </summary>
         public event EventHandler<BinanceOrderSubmitEventArgs> OrderSubmit;
@@ -406,7 +411,7 @@ namespace QuantConnect.BinanceBrokerage
         /// </summary>
         public PriceChangeStatistics[] GetTickerPriceChangeStatistics()
         {
-            var endpoint = $"{ApiPrefix}/ticker/24hr";
+            var endpoint = TickerPriceChangeStatisticsEndpoint;
             var request = new RestRequest(endpoint, Method.GET);
 
             var response = ExecuteRestRequest(request);
