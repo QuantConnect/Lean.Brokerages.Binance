@@ -1,6 +1,5 @@
 {
   "data-folder": "../../../../Lean/Data/",
-  "data-directory": "../../../../Lean/Data/",
 
   "binance-api-url": "https://api.binance.com",
   "binance-websocket-url": "wss://stream.binance.com:9443/ws",
