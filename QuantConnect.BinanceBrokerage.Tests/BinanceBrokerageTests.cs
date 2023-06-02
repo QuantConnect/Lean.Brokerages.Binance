@@ -47,7 +47,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
             {
                 { Symbol, CreateSecurity(Symbol) }
             };
-
+            var algorithmSettings = new AlgorithmSettings();
             var transactions = new SecurityTransactionManager(null, securities);
             transactions.SetOrderProcessor(new FakeOrderProcessor());
 
@@ -55,7 +55,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
             algorithm.Setup(a => a.Transactions).Returns(transactions);
             algorithm.Setup(a => a.Securities).Returns(securities);
             algorithm.Setup(a => a.BrokerageModel).Returns(new BinanceBrokerageModel());
-            algorithm.Setup(a => a.Portfolio).Returns(new SecurityPortfolioManager(securities, transactions));
+            algorithm.Setup(a => a.Portfolio).Returns(new SecurityPortfolioManager(securities, transactions, algorithmSettings));
 
             var apiKey = Config.Get("binance-api-key");
             var apiSecret = Config.Get("binance-api-secret");
