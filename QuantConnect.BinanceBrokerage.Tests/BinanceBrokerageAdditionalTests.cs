@@ -68,14 +68,14 @@ namespace QuantConnect.BinanceBrokerage.Tests
         public void ConnectToUserDataStreamIfAlgorithmNotNullAndApiIsCreated()
         {
             var securities = new SecurityManager(new TimeKeeper(DateTime.UtcNow, TimeZones.NewYork));
-
+            var algorithmSettings = new AlgorithmSettings();
             var transactions = new SecurityTransactionManager(null, securities);
             transactions.SetOrderProcessor(new FakeOrderProcessor());
 
             var algorithm = new Mock<IAlgorithm>();
             algorithm.Setup(a => a.Transactions).Returns(transactions);
             algorithm.Setup(a => a.BrokerageModel).Returns(new BinanceBrokerageModel());
-            algorithm.Setup(a => a.Portfolio).Returns(new SecurityPortfolioManager(securities, transactions));
+            algorithm.Setup(a => a.Portfolio).Returns(new SecurityPortfolioManager(securities, transactions, algorithmSettings));
 
             using var brokerage = CreateBrokerage(algorithm.Object);
 
