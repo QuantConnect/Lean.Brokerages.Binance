@@ -72,7 +72,7 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
                 var stepSize = lotFilter.GetValue("stepSize").ToObject<decimal>().NormalizeToStr();
 
                 var minNotional = symbol.Filters
-                    .First(f => f.GetValue("filterType").ToString() == "MIN_NOTIONAL");
+                    .First(f => f.GetValue("filterType").ToString() == "MIN_NOTIONAL" || f.GetValue("filterType").ToString() == "NOTIONAL");
                 var minOrderSize = minNotional.GetValue("minNotional").ToObject<decimal>().NormalizeToStr();
 
                 yield return $"{Market.ToLowerInvariant()},{symbol.Name},crypto,{symbol.Name},{symbol.QuoteAsset},1,{priceFilter},{stepSize},{symbol.Name},{minOrderSize}";
