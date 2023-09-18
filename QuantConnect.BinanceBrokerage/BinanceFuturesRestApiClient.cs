@@ -75,7 +75,7 @@ namespace QuantConnect.BinanceBrokerage
         public override List<Holding> GetAccountHoldings()
         {
             var queryString = $"timestamp={GetNonce()}";
-            var endpoint = $"{ApiPrefix}/account?{queryString}&signature={AuthenticationToken(queryString)}";
+            var endpoint = $"/fapi/v2/account?{queryString}&signature={AuthenticationToken(queryString)}";
             var request = new RestRequest(endpoint, Method.GET);
             request.AddHeader(KeyHeader, ApiKey);
 
@@ -96,6 +96,11 @@ namespace QuantConnect.BinanceBrokerage
                     Quantity = x.PositionAmt,
                 })
                 .ToList();
+        }
+
+        public override BalanceEntry[] GetCashBalance()
+        {
+            return GetCashBalance("/fapi/v2");
         }
     }
 }
