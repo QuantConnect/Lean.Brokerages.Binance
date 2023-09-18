@@ -141,10 +141,19 @@ namespace QuantConnect.BinanceBrokerage
         /// Gets the total account cash balance for specified account type
         /// </summary>
         /// <returns></returns>
-        public BalanceEntry[] GetCashBalance()
+        public virtual BalanceEntry[] GetCashBalance()
+        {
+            return GetCashBalance(ApiPrefix);
+        }
+
+        /// <summary>
+        /// Gets the total account cash balance for specified account type
+        /// </summary>
+        /// <returns></returns>
+        protected BalanceEntry[] GetCashBalance(string apiPrefix)
         {
             var queryString = $"timestamp={GetNonce()}";
-            var endpoint = $"{ApiPrefix}/account?{queryString}&signature={AuthenticationToken(queryString)}";
+            var endpoint = $"{apiPrefix}/account?{queryString}&signature={AuthenticationToken(queryString)}";
             var request = new RestRequest(endpoint, Method.GET);
             request.AddHeader(KeyHeader, ApiKey);
 
