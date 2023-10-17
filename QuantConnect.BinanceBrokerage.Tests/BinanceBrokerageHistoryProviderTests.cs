@@ -26,6 +26,8 @@ using QuantConnect.Securities;
 using QuantConnect.Tests;
 using System;
 using System.Linq;
+using QuantConnect.Lean.Engine.Storage;
+using QuantConnect.Storage;
 
 namespace QuantConnect.BinanceBrokerage.Tests
 {
@@ -68,7 +70,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
             {
                 var historyProvider = new BrokerageHistoryProvider();
                 historyProvider.SetBrokerage(brokerage);
-                historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null, null, null, null, null, false, new DataPermissionManager()));
+                historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null, null, null, null, null, false, new DataPermissionManager(), new LocalObjectStore()));
 
                 var now = DateTime.UtcNow;
 
@@ -103,7 +105,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
             {
                 var historyProvider = new BrokerageHistoryProvider();
                 historyProvider.SetBrokerage(brokerage);
-                historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null, null, null, null, null, false, new DataPermissionManager()));
+                historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null, null, null, null, null, false, new DataPermissionManager(), new LocalObjectStore()));
 
                 var now = DateTime.UtcNow;
 
