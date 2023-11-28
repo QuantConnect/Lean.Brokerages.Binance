@@ -86,7 +86,7 @@ namespace QuantConnect.BinanceBrokerage
             }
 
             return JsonConvert
-                .DeserializeObject<FuturesAccountInformation>(response.Content, CreateAccountConverter())
+                .DeserializeObject<FuturesAccountInformation>(response.Content)
                 .Positions
                 .Where(p => p.PositionAmt != 0)
                 .Select(x => new Holding
