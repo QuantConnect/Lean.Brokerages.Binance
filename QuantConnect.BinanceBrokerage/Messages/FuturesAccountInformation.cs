@@ -17,13 +17,13 @@ using System.Collections.Generic;
 
 namespace QuantConnect.BinanceBrokerage.Messages
 {
-    internal class FuturesAccountInformation
+    public class FuturesAccountInformation
     {
         public List<FutureBalance> Assets { get; set; }
         public List<FuturePosition> Positions { get; set; }
     }
 
-    internal class FuturePosition
+    public class FuturePosition
     {
         public  string Symbol { get; set; }
         public decimal PositionAmt { get; set; }
