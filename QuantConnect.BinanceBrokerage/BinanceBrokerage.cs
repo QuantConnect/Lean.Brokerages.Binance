@@ -37,6 +37,7 @@ using QuantConnect.Api;
 using QuantConnect.Brokerages;
 using RestSharp;
 using Timer = System.Timers.Timer;
+using QuantConnect.BinanceBrokerage.Constants;
 
 namespace QuantConnect.BinanceBrokerage
 {
@@ -67,6 +68,19 @@ namespace QuantConnect.BinanceBrokerage
 
         protected BinanceBaseRestApiClient ApiClient => _apiClientLazy?.Value;
         protected string MarketName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the trade channel used for streaming trade information.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="TradeChannelName"/> property represents the specific trade channel utilized for streaming trade data.
+        /// It is initialized with the constant value <see cref="TradeChannels.SpotTradeChannelName"/>, indicating the use of
+        /// Spot Trade Streams by default.
+        /// </remarks>
+        /// <value>
+        /// The default value is the channel name for Spot Trade Streams: <c>trade</c>.
+        /// </value>
+        protected virtual string TradeChannelName { get; } = TradeChannels.SpotTradeChannelName;
 
         /// <summary>
         /// Parameterless constructor for brokerage
@@ -595,7 +609,7 @@ namespace QuantConnect.BinanceBrokerage
                     method = "SUBSCRIBE",
                     @params = new[]
                     {
-                        $"{brokerageSymbol.ToLowerInvariant()}@trade",
+                        $"{brokerageSymbol.ToLowerInvariant()}@{TradeChannelName}",
                         $"{brokerageSymbol.ToLowerInvariant()}@bookTicker"
                     },
                     id = GetNextRequestId()
@@ -619,7 +633,7 @@ namespace QuantConnect.BinanceBrokerage
                     method = "UNSUBSCRIBE",
                     @params = new[]
                     {
-                        $"{brokerageSymbol.ToLowerInvariant()}@trade",
+                        $"{brokerageSymbol.ToLowerInvariant()}@{TradeChannelName}",
                         $"{brokerageSymbol.ToLowerInvariant()}@bookTicker"
                     },
                     id = GetNextRequestId()
