@@ -20,6 +20,7 @@ using QuantConnect.Securities;
 using QuantConnect.Brokerages;
 using QuantConnect.Interfaces;
 using QuantConnect.Configuration;
+using QuantConnect.BinanceBrokerage.Constants;
 
 namespace QuantConnect.BinanceBrokerage
 {
@@ -29,6 +30,19 @@ namespace QuantConnect.BinanceBrokerage
     [BrokerageFactory(typeof(BinanceFuturesBrokerageFactory))]
     public class BinanceFuturesBrokerage : BinanceBrokerage
     {
+        /// <summary>
+        /// Gets the trade channel name used for streaming trade information in the overridden context.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="TradeChannelName"/> property represents the specific trade channel name utilized for streaming
+        /// trade data in the overridden context. In this specific implementation, it returns the constant value
+        /// <see cref="TradeChannels.FutureTradeChannelName"/>, indicating the use of Future Trade Streams.
+        /// </remarks>
+        /// <value>
+        /// The value is the channel name for Future Trade Streams: <c>aggTrade</c>.
+        /// </value>
+        protected override string TradeChannelName => TradeChannels.FutureTradeChannelName;
+
         public BinanceFuturesBrokerage() : base(Market.Binance)
         {
         }

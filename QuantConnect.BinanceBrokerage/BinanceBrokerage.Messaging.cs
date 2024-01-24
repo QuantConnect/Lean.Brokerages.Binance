@@ -115,6 +115,7 @@ namespace QuantConnect.BinanceBrokerage
                     switch (eventType)
                     {
                         case "trade":
+                        case "aggTrade":
                             var trade = objData.ToObject<Trade>();
                             // futures feed send upper and lower case T confusing json
                             trade.Time = objData["T"].ToObject<long>();
