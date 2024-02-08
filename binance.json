@@ -1,0 +1,17 @@
+{
+	"description": "Binance is an international crypto exchange handling a substantial fraction of global crypto trading. They have voluntarily withdrawn from many countries for failing to meet regulatory requirements. We support their cash and margin accounts.",
+	
+	"platforms-features": [
+		{
+			"Platforms": ["Cloud Platform", "Local Platform", "LEAN CLI"],
+			"Download Data": [1,1,1],
+			"Backtesting": [1,1,1],
+			"Optimization": [1,1,1],
+			"Live Trading":	[1,1,1]
+		}
+	],
+	"order-types": ["Market", "Limit", "Stop Limit"],
+	"assets": ["Crypto Spot", "Crypto Futures"], 
+	"brokerage-url": "https://www.binance.com/",
+	"documentation": "/docs/v2/cloud-platform/live-trading/brokerages/binance"
+}
