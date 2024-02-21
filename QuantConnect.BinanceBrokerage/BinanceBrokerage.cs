@@ -495,6 +495,9 @@ namespace QuantConnect.BinanceBrokerage
             {
                 throw new InvalidOperationException("Binance.US doesn't support SPOT Testnet trading.");
             }
+
+            ValidateSubscription();
+
             base.Initialize(wssUrl, new WebSocketClientWrapper(), null, apiKey, apiSecret);
             _job = job;
             _algorithm = algorithm;
@@ -577,8 +580,6 @@ namespace QuantConnect.BinanceBrokerage
                 Log.Trace("Daily websocket restart: connect");
                 Connect();
             };
-
-            ValidateSubscription();
         }
 
         /// <summary>
@@ -733,10 +734,10 @@ namespace QuantConnect.BinanceBrokerage
         {
             try
             {
-                var productId = 176;
-                var userId = Config.GetInt("job-user-id");
-                var token = Config.Get("api-access-token");
-                var organizationId = Config.Get("job-organization-id", null);
+                const int productId = 176;
+                var userId = Globals.UserId;
+                var token = Globals.UserToken;
+                var organizationId = Globals.OrganizationID;
                 // Verify we can authenticate with this user and token
                 var api = new ApiConnection(userId, token);
                 if (!api.Connected)
