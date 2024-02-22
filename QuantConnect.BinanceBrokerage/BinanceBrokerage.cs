@@ -64,6 +64,10 @@ namespace QuantConnect.BinanceBrokerage
 
         private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
 
+        private bool _unsupportedAssetHistoryLogged;
+        private bool _unsupportedResolutionHistoryLogged;
+        private bool _unsupportedTickTypeHistoryLogged;
+
         private const int MaximumSymbolsPerConnection = 512;
 
         protected BinanceBaseRestApiClient ApiClient => _apiClientLazy?.Value;
@@ -310,27 +314,47 @@ namespace QuantConnect.BinanceBrokerage
         /// <returns>An enumerable of bars covering the span specified in the request</returns>
         public override IEnumerable<BaseData> GetHistory(Data.HistoryRequest request)
         {
+            if (!CanSubscribe(request.Symbol))
+            {
+                if (!_unsupportedAssetHistoryLogged)
+                {
+                    _unsupportedAssetHistoryLogged = true;
+                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidSymbol",
+                        $"{request.Symbol} is not supported, no history returned"));
+                }
+
+                return null;
+            }
+
             if (request.Resolution == Resolution.Tick || request.Resolution == Resolution.Second)
             {
-                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidResolution",
-                    $"{request.Resolution} resolution is not supported, no history returned"));
-                yield break;
+                if (!_unsupportedResolutionHistoryLogged)
+                {
+                    _unsupportedResolutionHistoryLogged = true;
+                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidResolution",
+                        $"{request.Resolution} resolution is not supported, no history returned"));
+                }
+
+                return null;
             }
 
             if (request.TickType != TickType.Trade)
             {
-                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidTickType",
-                    $"{request.TickType} tick type not supported, no history returned"));
-                yield break;
+                if (!_unsupportedTickTypeHistoryLogged)
+                {
+                    _unsupportedTickTypeHistoryLogged = true;
+                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidTickType",
+                        $"{request.TickType} tick type not supported, no history returned"));
+                }
+
+                return null;
             }
 
-            if (request.Symbol.SecurityType != GetSupportedSecurityType())
-            {
-                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidSecurityType",
-                    $"{request.Symbol.SecurityType} security type not supported, no history returned"));
-                yield break;
-            }
+            return GetHistoryImpl(request);
+        }
 
+        private IEnumerable<BaseData> GetHistoryImpl(Data.HistoryRequest request)
+        {
             var period = request.Resolution.ToTimeSpan();
             var restApiClient = _apiClientLazy?.IsValueCreated == true
                 ? ApiClient
@@ -436,7 +460,8 @@ namespace QuantConnect.BinanceBrokerage
         {
             return !symbol.Value.Contains("UNIVERSE") &&
                    symbol.SecurityType == GetSupportedSecurityType() &&
-                   symbol.ID.Market == MarketName;
+                   symbol.ID.Market == MarketName &&
+                   _symbolMapper.IsKnownLeanSymbol(symbol);
         }
 
         /// <summary>

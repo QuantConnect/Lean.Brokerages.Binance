@@ -13,19 +13,12 @@
  * limitations under the License.
 */
 
-using NodaTime;
 using NUnit.Framework;
 using QuantConnect.Brokerages;
 using QuantConnect.Configuration;
-using QuantConnect.Data;
-using QuantConnect.Data.Market;
 using QuantConnect.Lean.Engine.DataFeeds;
-using QuantConnect.Lean.Engine.HistoricalData;
-using QuantConnect.Logging;
-using QuantConnect.Securities;
 using QuantConnect.Tests;
 using System;
-using System.Linq;
 
 namespace QuantConnect.BinanceBrokerage.Tests
 {
@@ -35,9 +28,9 @@ namespace QuantConnect.BinanceBrokerage.Tests
         [Test]
         [TestCaseSource(nameof(ValidHistory))]
         [TestCaseSource(nameof(InvalidHistory))]
-        public override void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, bool throwsException)
+        public override void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType, bool unsupported)
         {
-            base.GetsHistory(symbol, resolution, period, throwsException);
+            base.GetsHistory(symbol, resolution, period, tickType, unsupported);
         }
 
         [Test]
@@ -67,9 +60,8 @@ namespace QuantConnect.BinanceBrokerage.Tests
             {
                 return new[]
                 {
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.BinanceUS), Resolution.Tick, TimeSpan.FromSeconds(15), TickType.Trade),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.BinanceUS), Resolution.Second, Time.OneMinute, TickType.Trade),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.BinanceUS), Resolution.Minute, Time.OneHour, TickType.Quote),
+                    // invalid period, no error, empty result
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.BinanceUS), Resolution.Daily, TimeSpan.FromDays(-15), TickType.Trade),
                 };
             }
         }
@@ -80,14 +72,18 @@ namespace QuantConnect.BinanceBrokerage.Tests
             {
                 return new[]
                 {
-                    // invalid period, no error, empty result
-                    new TestCaseData(Symbols.EURUSD, Resolution.Daily, TimeSpan.FromDays(-15), true),
-
-                    // invalid symbol, throws "System.ArgumentException : Unknown symbol: XYZ"
-                    new TestCaseData(Symbol.Create("XYZ", SecurityType.Crypto, Market.BinanceUS), Resolution.Daily, TimeSpan.FromDays(15), true),
-
-                    // invalid security type, throws "System.ArgumentException : Invalid security type: Equity"
-                    new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), true),
+                    // invalid market
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Minute, TimeSpan.FromSeconds(15), TickType.Trade, true),
+                    // invalid resolution
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.BinanceUS), Resolution.Tick, TimeSpan.FromSeconds(15), TickType.Trade, true),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.BinanceUS), Resolution.Second, Time.OneMinute, TickType.Trade, true),
+                    // invalid tick type
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.BinanceUS), Resolution.Minute, Time.OneHour, TickType.Quote, true),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.BinanceUS), Resolution.Minute, Time.OneHour, TickType.OpenInterest, true),
+                    // invalid symbol
+                    new TestCaseData(Symbol.Create("XYZ", SecurityType.Crypto, Market.BinanceUS), Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, true),
+                    // invalid security type
+                    new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, true),
                 };
             }
         }

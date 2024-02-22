@@ -20,14 +20,11 @@ using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Lean.Engine.DataFeeds;
-using QuantConnect.Lean.Engine.HistoricalData;
 using QuantConnect.Logging;
 using QuantConnect.Securities;
 using QuantConnect.Tests;
 using System;
 using System.Linq;
-using QuantConnect.Lean.Engine.Storage;
-using QuantConnect.Storage;
 
 namespace QuantConnect.BinanceBrokerage.Tests
 {
@@ -39,6 +36,7 @@ namespace QuantConnect.BinanceBrokerage.Tests
         [OneTimeSetUp]
         public void Setup()
         {
+            TestGlobals.Initialize();
             _brokerage = CreateBrokerage();
         }
 
@@ -52,9 +50,9 @@ namespace QuantConnect.BinanceBrokerage.Tests
         [Test]
         [TestCaseSource(nameof(ValidHistory))]
         [TestCaseSource(nameof(InvalidHistory))]
-        public virtual void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, bool throwsException)
+        public virtual void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType, bool unsupported)
         {
-            BaseHistoryTest(symbol, resolution, period, throwsException, _brokerage);
+            BaseHistoryTest(symbol, resolution, period, tickType, unsupported, _brokerage);
         }
 
         [Test]
@@ -66,95 +64,61 @@ namespace QuantConnect.BinanceBrokerage.Tests
 
         public static void BaseEmptyHistoryTest(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType, Brokerage brokerage)
         {
-            TestDelegate test = () =>
-            {
-                var historyProvider = new BrokerageHistoryProvider();
-                historyProvider.SetBrokerage(brokerage);
-                historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null, null, null, null, null, false, new DataPermissionManager(), new LocalObjectStore()));
+            var now = DateTime.UtcNow;
+            var request = new HistoryRequest(now.Add(-period),
+                now,
+                typeof(TradeBar),
+                symbol,
+                resolution,
+                SecurityExchangeHours.AlwaysOpen(TimeZones.Utc),
+                DateTimeZone.Utc,
+                Resolution.Minute,
+                false,
+                false,
+                DataNormalizationMode.Adjusted,
+                tickType);
 
-                var now = DateTime.UtcNow;
+            var history = brokerage.GetHistory(request)?.ToList();
 
-                var requests = new[]
-                {
-                    new HistoryRequest(now.Add(-period),
-                                       now,
-                                       typeof(TradeBar),
-                                       symbol,
-                                       resolution,
-                                       SecurityExchangeHours.AlwaysOpen(TimeZones.Utc),
-                                       DateTimeZone.Utc,
-                                       Resolution.Minute,
-                                       false,
-                                       false,
-                                       DataNormalizationMode.Adjusted,
-                                       tickType)
-                };
+            Assert.IsNotNull(history);
 
-                var history = historyProvider.GetHistory(requests, TimeZones.Utc).ToList();
-
-                Log.Trace("Data points retrieved: " + historyProvider.DataPointCount);
-                Assert.AreEqual(0, historyProvider.DataPointCount);
-            };
-
-            Assert.DoesNotThrow(test);
+            Log.Debug("Data points retrieved: " + history.Count);
+            Assert.AreEqual(0, history.Count);
         }
 
-        public static void BaseHistoryTest(Symbol symbol, Resolution resolution, TimeSpan period, bool throwsException, Brokerage brokerage)
+        public static void BaseHistoryTest(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType, bool unsupported, Brokerage brokerage)
         {
-            TestDelegate test = () =>
+            var now = DateTime.UtcNow;
+            var request = new HistoryRequest(now.Add(-period),
+                now,
+                typeof(TradeBar),
+                symbol,
+                resolution,
+                SecurityExchangeHours.AlwaysOpen(TimeZones.Utc),
+                DateTimeZone.Utc,
+                Resolution.Minute,
+                false,
+                false,
+                DataNormalizationMode.Adjusted,
+                tickType);
+
+            var history = brokerage.GetHistory(request)?.ToList();
+
+            if (unsupported)
             {
-                var historyProvider = new BrokerageHistoryProvider();
-                historyProvider.SetBrokerage(brokerage);
-                historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null, null, null, null, null, false, new DataPermissionManager(), new LocalObjectStore()));
-
-                var now = DateTime.UtcNow;
-
-                var requests = new[]
-                {
-                    new HistoryRequest(now.Add(-period),
-                                       now,
-                                       typeof(TradeBar),
-                                       symbol,
-                                       resolution,
-                                       SecurityExchangeHours.AlwaysOpen(TimeZones.Utc),
-                                       DateTimeZone.Utc,
-                                       Resolution.Minute,
-                                       false,
-                                       false,
-                                       DataNormalizationMode.Adjusted,
-                                       TickType.Trade)
-                };
-
-                var history = historyProvider.GetHistory(requests, TimeZones.Utc);
-
-                foreach (var slice in history)
-                {
-                    if (resolution == Resolution.Tick)
-                    {
-                        foreach (var tick in slice.Ticks[symbol])
-                        {
-                            Log.Trace("{0}: {1} - {2} / {3}", tick.Time.ToStringInvariant("yyyy-MM-dd HH:mm:ss.fff"), tick.Symbol, tick.BidPrice, tick.AskPrice);
-                        }
-                    }
-                    else
-                    {
-                        var bar = slice.Bars[symbol];
-
-                        Log.Trace("{0}: {1} - O={2}, H={3}, L={4}, C={5}", bar.Time, bar.Symbol, bar.Open, bar.High, bar.Low, bar.Close);
-                    }
-                }
-
-                Assert.Greater(historyProvider.DataPointCount, 0);
-                Log.Debug("Data points retrieved: " + historyProvider.DataPointCount);
-            };
-
-            if (throwsException)
-            {
-                Assert.Throws<ArgumentException>(test);
+                Assert.IsNull(history);
             }
             else
             {
-                Assert.DoesNotThrow(test);
+                Assert.IsNotNull(history);
+
+                foreach (var bar in history.Cast<TradeBar>())
+                {
+                    Log.Trace("{0}: {1} - O={2}, H={3}, L={4}, C={5}", bar.Time, bar.Symbol, bar.Open, bar.High, bar.Low, bar.Close);
+                }
+
+                Assert.Greater(history.Count, 0);
+                Log.Debug("Data points retrieved: " + history.Count);
             }
         }
 
@@ -164,10 +128,9 @@ namespace QuantConnect.BinanceBrokerage.Tests
             {
                 return new[]
                 {
-                    // valid
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Minute, Time.OneHour, false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Hour, Time.OneDay, false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Daily, TimeSpan.FromDays(15), false),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Minute, Time.OneHour, TickType.Trade, false),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Hour, Time.OneDay, TickType.Trade, false),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, false),
                 };
             }
         }
@@ -178,9 +141,8 @@ namespace QuantConnect.BinanceBrokerage.Tests
             {
                 return new[]
                 {
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Tick, TimeSpan.FromSeconds(15), TickType.Trade),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Second, Time.OneMinute, TickType.Trade),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Minute, Time.OneHour, TickType.Quote),
+                    // invalid period
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Daily, TimeSpan.FromDays(-15), TickType.Trade),
                 };
             }
         }
@@ -191,14 +153,19 @@ namespace QuantConnect.BinanceBrokerage.Tests
             {
                 return new[]
                 {
-                    // invalid period, no error, empty result
-                    new TestCaseData(Symbols.EURUSD, Resolution.Daily, TimeSpan.FromDays(-15), false),
-
-                    // invalid symbol, throws "System.ArgumentException : Unknown symbol: XYZ"
-                    new TestCaseData(Symbol.Create("XYZ", SecurityType.Crypto, Market.Binance), Resolution.Daily, TimeSpan.FromDays(15), true),
-
-                    // invalid security type, throws "System.ArgumentException : Invalid security type: Equity"
-                    new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), false),
+                    // invalid symbol
+                    new TestCaseData(Symbol.Create("XYZ", SecurityType.Crypto, Market.Binance), Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, true),
+                    // invalid security type
+                    new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, true),
+                    new TestCaseData(Symbols.USDJPY, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, true),
+                    // invalid market
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.BinanceUS), Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, true),
+                    // invalid resolution
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Tick, TimeSpan.FromSeconds(15), TickType.Trade, true),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Second, Time.OneMinute, TickType.Trade, true),
+                    // Invalid tick type
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Minute, Time.OneHour, TickType.Quote, true),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Minute, Time.OneHour, TickType.OpenInterest, true),
                 };
             }
         }
