@@ -81,7 +81,7 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
                 DataNormalizationMode.Raw,
                 TickType.Trade);
 
-            return Brokerage.GetHistory(historyRequest) ?? Enumerable.Empty<BaseData>();
+            return Brokerage.GetHistory(historyRequest);
         }
 
         /// <summary>
