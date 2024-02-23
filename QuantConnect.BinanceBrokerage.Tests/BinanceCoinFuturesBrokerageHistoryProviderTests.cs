@@ -48,13 +48,6 @@ namespace QuantConnect.BinanceBrokerage.Tests
             BinanceBrokerageHistoryProviderTests.BaseHistoryTest(symbol, resolution, period, tickType, unsupported, _brokerage);
         }
 
-        [Test]
-        [TestCaseSource(nameof(NoHistory))]
-        public virtual void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
-        {
-            BinanceBrokerageHistoryProviderTests.BaseEmptyHistoryTest(symbol, resolution, period, tickType, _brokerage);
-        }
-
         private static TestCaseData[] ValidHistory
         {
             get
@@ -69,24 +62,14 @@ namespace QuantConnect.BinanceBrokerage.Tests
             }
         }
 
-        private static TestCaseData[] NoHistory
-        {
-            get
-            {
-                return new[]
-                {
-                    // invalid period, no error, empty result
-                    new TestCaseData(Symbol.Create("ETHUSD", SecurityType.CryptoFuture, Market.Binance), Resolution.Minute, TimeSpan.FromDays(-15), TickType.Trade),
-                };
-            }
-        }
-
         private static TestCaseData[] InvalidHistory
         {
             get
             {
                 return new[]
                 {
+                    // invalid period
+                    new TestCaseData(Symbol.Create("ETHUSD", SecurityType.CryptoFuture, Market.Binance), Resolution.Minute, TimeSpan.FromDays(-15), TickType.Trade, true),
                     // Invalid type of future
                     new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Minute, TimeSpan.FromSeconds(15), TickType.Trade, true),
                     // invalid resolution

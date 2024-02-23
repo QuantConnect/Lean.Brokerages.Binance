@@ -67,6 +67,7 @@ namespace QuantConnect.BinanceBrokerage
         private bool _unsupportedAssetHistoryLogged;
         private bool _unsupportedResolutionHistoryLogged;
         private bool _unsupportedTickTypeHistoryLogged;
+        private bool _invalidTimeRangeHistoryLogged;
 
         private const int MaximumSymbolsPerConnection = 512;
 
@@ -347,6 +348,17 @@ namespace QuantConnect.BinanceBrokerage
                         $"{request.TickType} tick type not supported, no history returned"));
                 }
 
+                return null;
+            }
+
+            if (request.StartTimeUtc >= request.EndTimeUtc)
+            {
+                if (!_invalidTimeRangeHistoryLogged)
+                {
+                    _invalidTimeRangeHistoryLogged = true;
+                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "InvalidDateRange",
+                        "The history request start date must precede the end date, no history returned"));
+                }
                 return null;
             }
 

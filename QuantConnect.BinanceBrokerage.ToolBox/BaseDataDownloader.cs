@@ -45,27 +45,6 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
             var resolution = dataDownloaderGetParameters.Resolution;
             var startUtc = dataDownloaderGetParameters.StartUtc;
             var endUtc = dataDownloaderGetParameters.EndUtc;
-            var tickType = dataDownloaderGetParameters.TickType;
-
-            if (tickType != TickType.Trade)
-            {
-                return Enumerable.Empty<BaseData>();
-            }
-
-            if (resolution == Resolution.Tick || resolution == Resolution.Second)
-            {
-                throw new ArgumentException($"Resolution not available: {resolution}");
-            }
-
-            if (!SymbolMapper.IsKnownLeanSymbol(symbol))
-            {
-                throw new ArgumentException($"The ticker {symbol.Value} is not available.");
-            }
-
-            if (endUtc < startUtc)
-            {
-                throw new ArgumentException("The end date must be greater or equal than the start date.");
-            }
 
             var historyRequest = new HistoryRequest(
                 startUtc,

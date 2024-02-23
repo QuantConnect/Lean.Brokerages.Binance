@@ -55,37 +55,6 @@ namespace QuantConnect.BinanceBrokerage.Tests
             BaseHistoryTest(symbol, resolution, period, tickType, unsupported, _brokerage);
         }
 
-        [Test]
-        [TestCaseSource(nameof(NoHistory))]
-        public virtual void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
-        {
-            BaseEmptyHistoryTest(symbol, resolution, period, tickType, _brokerage);
-        }
-
-        public static void BaseEmptyHistoryTest(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType, Brokerage brokerage)
-        {
-            var now = DateTime.UtcNow;
-            var request = new HistoryRequest(now.Add(-period),
-                now,
-                typeof(TradeBar),
-                symbol,
-                resolution,
-                SecurityExchangeHours.AlwaysOpen(TimeZones.Utc),
-                DateTimeZone.Utc,
-                Resolution.Minute,
-                false,
-                false,
-                DataNormalizationMode.Adjusted,
-                tickType);
-
-            var history = brokerage.GetHistory(request)?.ToList();
-
-            Assert.IsNotNull(history);
-
-            Log.Debug("Data points retrieved: " + history.Count);
-            Assert.AreEqual(0, history.Count);
-        }
-
         public static void BaseHistoryTest(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType, bool unsupported, Brokerage brokerage)
         {
             var now = DateTime.UtcNow;
@@ -135,24 +104,14 @@ namespace QuantConnect.BinanceBrokerage.Tests
             }
         }
 
-        private static TestCaseData[] NoHistory
-        {
-            get
-            {
-                return new[]
-                {
-                    // invalid period
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Daily, TimeSpan.FromDays(-15), TickType.Trade),
-                };
-            }
-        }
-
         private static TestCaseData[] InvalidHistory
         {
             get
             {
                 return new[]
                 {
+                    // invalid period
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.Crypto, Market.Binance), Resolution.Daily, TimeSpan.FromDays(-15), TickType.Trade, true),
                     // invalid symbol
                     new TestCaseData(Symbol.Create("XYZ", SecurityType.Crypto, Market.Binance), Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, true),
                     // invalid security type
