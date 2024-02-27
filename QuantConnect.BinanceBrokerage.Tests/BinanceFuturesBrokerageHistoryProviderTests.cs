@@ -43,16 +43,9 @@ namespace QuantConnect.BinanceBrokerage.Tests
         [Test]
         [TestCaseSource(nameof(ValidHistory))]
         [TestCaseSource(nameof(InvalidHistory))]
-        public virtual void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, bool throwsException)
+        public virtual void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType, bool unsupported)
         {
-            BinanceBrokerageHistoryProviderTests.BaseHistoryTest(symbol, resolution, period, throwsException, _brokerage);
-        }
-
-        [Test]
-        [TestCaseSource(nameof(NoHistory))]
-        public virtual void GetEmptyHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType)
-        {
-            BinanceBrokerageHistoryProviderTests.BaseEmptyHistoryTest(symbol, resolution, period, tickType, _brokerage);
+            BinanceBrokerageHistoryProviderTests.BaseHistoryTest(symbol, resolution, period, tickType, unsupported, _brokerage);
         }
 
         private static TestCaseData[] ValidHistory
@@ -62,22 +55,9 @@ namespace QuantConnect.BinanceBrokerage.Tests
                 return new[]
                 {
                     // valid
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Minute, Time.OneHour, false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Hour, Time.OneDay, false),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Daily, TimeSpan.FromDays(15), false),
-                };
-            }
-        }
-
-        private static TestCaseData[] NoHistory
-        {
-            get
-            {
-                return new[]
-                {
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Tick, TimeSpan.FromSeconds(15), TickType.Trade),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Second, Time.OneMinute, TickType.Trade),
-                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Minute, Time.OneHour, TickType.Quote),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Minute, Time.OneHour, TickType.Trade, false),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Hour, Time.OneDay, TickType.Trade, false),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, false),
                 };
             }
         }
@@ -88,14 +68,18 @@ namespace QuantConnect.BinanceBrokerage.Tests
             {
                 return new[]
                 {
-                    // invalid period, no error, empty result
-                    new TestCaseData(Symbols.EURUSD, Resolution.Daily, TimeSpan.FromDays(-15), false),
-
-                    // invalid symbol, throws "System.ArgumentException : Unknown symbol: XYZ"
-                    new TestCaseData(Symbol.Create("XYZ", SecurityType.CryptoFuture, Market.Binance), Resolution.Daily, TimeSpan.FromDays(15), true),
-
-                    // invalid security type, throws "System.ArgumentException : Invalid security type: Equity"
-                    new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), false),
+                    // invalid period
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Daily, TimeSpan.FromDays(-15), TickType.Trade, true),
+                    // invalid resolution
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Tick, TimeSpan.FromSeconds(15), TickType.Trade, true),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Second, Time.OneMinute, TickType.Trade, true),
+                    //invalid tick type
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Minute, Time.OneHour, TickType.Quote, true),
+                    new TestCaseData(Symbol.Create("ETHUSDT", SecurityType.CryptoFuture, Market.Binance), Resolution.Minute, Time.OneHour, TickType.OpenInterest, true),
+                    // invalid symbol
+                    new TestCaseData(Symbol.Create("XYZ", SecurityType.CryptoFuture, Market.Binance), Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, true),
+                    // invalid security type
+                    new TestCaseData(Symbols.AAPL, Resolution.Daily, TimeSpan.FromDays(15), TickType.Trade, true),
                 };
             }
         }

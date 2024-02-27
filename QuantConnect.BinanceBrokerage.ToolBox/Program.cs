@@ -112,6 +112,11 @@ namespace QuantConnect.BinanceBrokerage.ToolBox
                     // Download the data
                     var symbol = downloader.GetSymbol(ticker);
                     var data = downloader.Get(new DataDownloaderGetParameters(symbol, castResolution, fromDate, toDate));
+                    if (data == null)
+                    {
+                        continue;
+                    }
+
                     var bars = data.Cast<TradeBar>().ToList();
 
                     // Save the data (single resolution)
