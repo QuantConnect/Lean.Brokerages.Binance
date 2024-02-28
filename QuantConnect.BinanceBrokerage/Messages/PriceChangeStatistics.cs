@@ -13,7 +13,7 @@
  * limitations under the License.
 */
 
-namespace QuantConnect.BinanceBrokerage.Messages
+namespace QuantConnect.Brokerages.Binance.Messages
 {
     /// <summary>
     /// 24 hour rolling window price change statistics.

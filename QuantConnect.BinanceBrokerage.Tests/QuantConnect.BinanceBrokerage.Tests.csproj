@@ -9,10 +9,10 @@
         <Copyright>Copyright ©  2021</Copyright>
         <TestProjectType>UnitTest</TestProjectType>
         <OutputPath>bin\$(Configuration)\</OutputPath>
-        <Product>QuantConnect.BinanceBrokerage.Tests</Product>
-        <AssemblyName>QuantConnect.BinanceBrokerage.Tests</AssemblyName>
-        <RootNamespace>QuantConnect.BinanceBrokerage.Tests</RootNamespace>
-        <AssemblyTitle>QuantConnect.BinanceBrokerage.Tests</AssemblyTitle>
+        <Product>QuantConnect.Brokerages.Binance.Tests</Product>
+        <AssemblyName>QuantConnect.Brokerages.Binance.Tests</AssemblyName>
+        <RootNamespace>QuantConnect.Brokerages.Binance.Tests</RootNamespace>
+        <AssemblyTitle>QuantConnect.Brokerages.Binance.Tests</AssemblyTitle>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     </PropertyGroup>
 

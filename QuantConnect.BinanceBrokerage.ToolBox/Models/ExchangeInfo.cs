@@ -14,7 +14,7 @@
  *
 */
 
-namespace QuantConnect.BinanceBrokerage.ToolBox.Models
+namespace QuantConnect.Brokerages.Binance.ToolBox.Models
 {
     /// <summary>
     /// Represents Binance exchange info response

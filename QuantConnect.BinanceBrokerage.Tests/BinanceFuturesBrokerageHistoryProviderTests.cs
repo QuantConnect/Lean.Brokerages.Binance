@@ -16,11 +16,10 @@
 using System;
 using NUnit.Framework;
 using QuantConnect.Tests;
-using QuantConnect.Brokerages;
 using QuantConnect.Configuration;
 using QuantConnect.Lean.Engine.DataFeeds;
 
-namespace QuantConnect.BinanceBrokerage.Tests
+namespace QuantConnect.Brokerages.Binance.Tests
 {
     [TestFixture]
     public class BinanceFuturesBrokerageHistoryProviderTests

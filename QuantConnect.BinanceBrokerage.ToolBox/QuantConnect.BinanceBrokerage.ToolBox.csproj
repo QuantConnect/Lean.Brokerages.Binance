@@ -7,10 +7,10 @@
         <TargetFramework>net6.0</TargetFramework>
         <Copyright>Copyright ©  2021</Copyright>
         <OutputPath>bin\$(Configuration)\</OutputPath>
-        <Product>QuantConnect.BinanceBrokerage.ToolBox</Product>
-        <AssemblyName>QuantConnect.BinanceBrokerage.ToolBox</AssemblyName>
-        <RootNamespace>QuantConnect.BinanceBrokerage.ToolBox</RootNamespace>
-        <AssemblyTitle>QuantConnect.BinanceBrokerage.ToolBox</AssemblyTitle>
+        <Product>QuantConnect.Brokerages.Binance.ToolBox</Product>
+        <AssemblyName>QuantConnect.Brokerages.Binance.ToolBox</AssemblyName>
+        <RootNamespace>QuantConnect.Brokerages.Binance.ToolBox</RootNamespace>
+        <AssemblyTitle>QuantConnect.Brokerages.Binance.ToolBox</AssemblyTitle>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>

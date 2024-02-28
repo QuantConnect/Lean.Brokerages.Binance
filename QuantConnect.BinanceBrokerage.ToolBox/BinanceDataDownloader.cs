@@ -13,18 +13,9 @@
  * limitations under the License.
 */
 
-using NodaTime;
-using QuantConnect.Brokerages;
 using QuantConnect.Configuration;
-using QuantConnect.Data;
-using QuantConnect.Data.Market;
-using QuantConnect.Securities;
-using QuantConnect.Util;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace QuantConnect.BinanceBrokerage.ToolBox
+namespace QuantConnect.Brokerages.Binance.ToolBox
 {
     /// <summary>
     /// Binance Downloader class

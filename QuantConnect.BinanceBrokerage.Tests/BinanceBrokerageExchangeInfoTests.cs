@@ -15,11 +15,11 @@
 
 using NUnit.Framework;
 using QuantConnect.Logging;
-using QuantConnect.BinanceBrokerage.ToolBox;
+using QuantConnect.Brokerages.Binance.ToolBox;
 using System;
 using System.Linq;
 
-namespace QuantConnect.BinanceBrokerage.Tests
+namespace QuantConnect.Brokerages.Binance.Tests
 {
     [TestFixture]
     public class BinanceBrokerageExchangeInfoTests

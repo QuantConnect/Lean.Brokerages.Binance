@@ -15,7 +15,7 @@
 
 using QuantConnect.Orders;
 
-namespace QuantConnect.BinanceBrokerage
+namespace QuantConnect.Brokerages.Binance
 {
     /// <summary>
     /// Represents a binance submit order event data

@@ -13,10 +13,9 @@
  * limitations under the License.
 */
 
-using QuantConnect.Brokerages;
 using QuantConnect.Securities;
 
-namespace QuantConnect.BinanceBrokerage
+namespace QuantConnect.Brokerages.Binance
 {
     /// <summary>
     /// Binance Coin Futures REST API implementation

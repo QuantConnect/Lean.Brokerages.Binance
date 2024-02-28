@@ -16,7 +16,7 @@
 using System;
 using System.Globalization;
 
-namespace QuantConnect.BinanceBrokerage.Messages
+namespace QuantConnect.Brokerages.Binance.Messages
 {
 #pragma warning disable 1591
 

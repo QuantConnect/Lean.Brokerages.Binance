@@ -15,8 +15,7 @@
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using QuantConnect.BinanceBrokerage.Messages;
-using QuantConnect.Brokerages;
+using QuantConnect.Brokerages.Binance.Messages;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
@@ -32,7 +31,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Order = QuantConnect.Orders.Order;
 
-namespace QuantConnect.BinanceBrokerage
+namespace QuantConnect.Brokerages.Binance
 {
     /// <summary>
     /// Binance REST API base implementation

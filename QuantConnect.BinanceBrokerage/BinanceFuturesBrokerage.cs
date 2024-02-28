@@ -17,12 +17,11 @@ using QuantConnect.Data;
 using QuantConnect.Util;
 using QuantConnect.Packets;
 using QuantConnect.Securities;
-using QuantConnect.Brokerages;
 using QuantConnect.Interfaces;
 using QuantConnect.Configuration;
-using QuantConnect.BinanceBrokerage.Constants;
+using QuantConnect.Brokerages.Binance.Constants;
 
-namespace QuantConnect.BinanceBrokerage
+namespace QuantConnect.Brokerages.Binance
 {
     /// <summary>
     /// Binance USDT Futures brokerage implementation

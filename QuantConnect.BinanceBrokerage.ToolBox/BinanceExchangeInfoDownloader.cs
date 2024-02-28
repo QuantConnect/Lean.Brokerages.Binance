@@ -18,9 +18,9 @@ using System.Linq;
 using Newtonsoft.Json;
 using QuantConnect.ToolBox;
 using System.Collections.Generic;
-using QuantConnect.BinanceBrokerage.ToolBox.Models;
+using QuantConnect.Brokerages.Binance.ToolBox.Models;
 
-namespace QuantConnect.BinanceBrokerage.ToolBox
+namespace QuantConnect.Brokerages.Binance.ToolBox
 {
     /// <summary>
     /// Binance implementation of <see cref="IExchangeInfoDownloader"/>

@@ -34,12 +34,11 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using QuantConnect.Api;
-using QuantConnect.Brokerages;
 using RestSharp;
 using Timer = System.Timers.Timer;
-using QuantConnect.BinanceBrokerage.Constants;
+using QuantConnect.Brokerages.Binance.Constants;
 
-namespace QuantConnect.BinanceBrokerage
+namespace QuantConnect.Brokerages.Binance
 {
     /// <summary>
     /// Binance brokerage implementation

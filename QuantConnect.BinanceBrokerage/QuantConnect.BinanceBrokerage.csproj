@@ -1,12 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <TargetFramework>net6.0</TargetFramework>
-    <Product>QuantConnect.BinanceBrokerage</Product>
-    <AssemblyName>QuantConnect.BinanceBrokerage</AssemblyName>
-    <RootNamespace>QuantConnect.BinanceBrokerage</RootNamespace>
-    <AssemblyTitle>QuantConnect.BinanceBrokerage</AssemblyTitle>
+    <Product>QuantConnect.Brokerages.Binance</Product>
+    <AssemblyName>QuantConnect.Brokerages.Binance</AssemblyName>
+    <RootNamespace>QuantConnect.Brokerages.Binance</RootNamespace>
+    <AssemblyTitle>QuantConnect.Brokerages.Binance</AssemblyTitle>
     <OutputType>Library</OutputType>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>

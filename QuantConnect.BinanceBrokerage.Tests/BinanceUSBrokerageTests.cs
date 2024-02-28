@@ -15,7 +15,6 @@
 
 using Moq;
 using NUnit.Framework;
-using QuantConnect.Brokerages;
 using QuantConnect.Configuration;
 using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
@@ -25,7 +24,7 @@ using QuantConnect.Tests.Common.Securities;
 using System;
 using System.Linq;
 
-namespace QuantConnect.BinanceBrokerage.Tests
+namespace QuantConnect.Brokerages.Binance.Tests
 {
     [TestFixture]
     public partial class BinanceUSBrokerageTests : BinanceBrokerageTests

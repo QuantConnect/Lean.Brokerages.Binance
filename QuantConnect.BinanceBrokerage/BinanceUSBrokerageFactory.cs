@@ -15,14 +15,13 @@
 
 using System;
 using System.Collections.Generic;
-using QuantConnect.Brokerages;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Interfaces;
 using QuantConnect.Securities;
 using QuantConnect.Util;
 
-namespace QuantConnect.BinanceBrokerage
+namespace QuantConnect.Brokerages.Binance
 {
     /// <summary>
     /// Factory method to create Binance.US brokerage
