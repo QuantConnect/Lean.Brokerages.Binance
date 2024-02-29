@@ -15,7 +15,7 @@
 
 using System.Collections.Generic;
 
-namespace QuantConnect.BinanceBrokerage.Messages
+namespace QuantConnect.Brokerages.Binance.Messages
 {
     public class FuturesAccountInformation
     {

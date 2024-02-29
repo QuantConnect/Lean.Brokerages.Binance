@@ -16,10 +16,10 @@
 using System.Linq;
 using Newtonsoft.Json;
 using NUnit.Framework;
-using QuantConnect.BinanceBrokerage.Converters;
-using QuantConnect.BinanceBrokerage.Messages;
+using QuantConnect.Brokerages.Binance.Converters;
+using QuantConnect.Brokerages.Binance.Messages;
 
-namespace QuantConnect.BinanceBrokerage.Tests
+namespace QuantConnect.Brokerages.Binance.Tests
 {
     [TestFixture]
     public class MarginAccountConverterTests

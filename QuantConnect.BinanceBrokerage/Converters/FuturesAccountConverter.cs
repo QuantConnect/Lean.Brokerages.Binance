@@ -16,9 +16,9 @@
 using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using QuantConnect.BinanceBrokerage.Messages;
+using QuantConnect.Brokerages.Binance.Messages;
 
-namespace QuantConnect.BinanceBrokerage.Converters
+namespace QuantConnect.Brokerages.Binance.Converters
 {
     /// <summary>
     /// Deserializes cross margin Account data

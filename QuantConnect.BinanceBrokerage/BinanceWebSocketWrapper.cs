@@ -14,9 +14,8 @@
 */
 
 using System;
-using QuantConnect.Brokerages;
 
-namespace QuantConnect.BinanceBrokerage
+namespace QuantConnect.Brokerages.Binance
 {
     /// <summary>
     /// Wrapper class for a Binance websocket connection

@@ -17,7 +17,7 @@ using Newtonsoft.Json;
 using QuantConnect.Orders;
 using System;
 
-namespace QuantConnect.BinanceBrokerage.Messages
+namespace QuantConnect.Brokerages.Binance.Messages
 {
 #pragma warning disable 1591
 

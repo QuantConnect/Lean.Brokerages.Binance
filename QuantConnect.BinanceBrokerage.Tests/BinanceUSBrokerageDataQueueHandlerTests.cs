@@ -16,7 +16,7 @@
 using NUnit.Framework;
 using QuantConnect.Tests;
 
-namespace QuantConnect.BinanceBrokerage.Tests
+namespace QuantConnect.Brokerages.Binance.Tests
 {
     [TestFixture]
     public partial class BinanceUSBrokerageTests

@@ -13,7 +13,7 @@
  * limitations under the License.
 */
 
-namespace QuantConnect.BinanceBrokerage.Messages
+namespace QuantConnect.Brokerages.Binance.Messages
 {
 #pragma warning disable 1591
     public enum EventType

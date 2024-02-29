@@ -13,7 +13,7 @@
  * limitations under the License.
 */
 
-using QuantConnect.BinanceBrokerage.Messages;
+using QuantConnect.Brokerages.Binance.Messages;
 using QuantConnect.Data.Market;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
@@ -21,11 +21,10 @@ using QuantConnect.Orders.Fees;
 using QuantConnect.Securities;
 using System;
 using Newtonsoft.Json.Linq;
-using QuantConnect.Brokerages;
 using QuantConnect.Data;
 using System.Linq;
 
-namespace QuantConnect.BinanceBrokerage
+namespace QuantConnect.Brokerages.Binance
 {
     public partial class BinanceBrokerage
     {

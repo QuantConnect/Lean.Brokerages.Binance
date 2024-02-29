@@ -14,17 +14,16 @@
 */
 
 using Newtonsoft.Json;
-using QuantConnect.Brokerages;
 using QuantConnect.Securities;
-using QuantConnect.BinanceBrokerage.Converters;
+using QuantConnect.Brokerages.Binance.Converters;
 using System.Collections.Generic;
-using QuantConnect.BinanceBrokerage.Messages;
+using QuantConnect.Brokerages.Binance.Messages;
 using RestSharp;
 using System.Net;
 using System;
 using System.Linq;
 
-namespace QuantConnect.BinanceBrokerage
+namespace QuantConnect.Brokerages.Binance
 {
     /// <summary>
     /// Binance USDT Futures REST API implementation

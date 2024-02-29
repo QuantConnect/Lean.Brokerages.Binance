@@ -13,7 +13,7 @@
  * limitations under the License.
 */
 
-namespace QuantConnect.BinanceBrokerage.Constants
+namespace QuantConnect.Brokerages.Binance.Constants
 {
     /// <summary>
     /// The <see cref="TradeChannels"/> class contains constant values representing trade channels in different markets.

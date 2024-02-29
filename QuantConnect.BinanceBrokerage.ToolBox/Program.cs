@@ -23,7 +23,7 @@ using QuantConnect.Data.Market;
 using QuantConnect.Util;
 using static QuantConnect.Configuration.ApplicationParser;
 
-namespace QuantConnect.BinanceBrokerage.ToolBox
+namespace QuantConnect.Brokerages.Binance.ToolBox
 {
     static class Program
     {

@@ -15,7 +15,6 @@
 
 using NodaTime;
 using NUnit.Framework;
-using QuantConnect.Brokerages;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
@@ -26,7 +25,7 @@ using QuantConnect.Tests;
 using System;
 using System.Linq;
 
-namespace QuantConnect.BinanceBrokerage.Tests
+namespace QuantConnect.Brokerages.Binance.Tests
 {
     [TestFixture]
     public class BinanceBrokerageHistoryProviderTests

@@ -15,12 +15,11 @@
 
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using QuantConnect.BinanceBrokerage.Converters;
-using QuantConnect.Brokerages;
+using QuantConnect.Brokerages.Binance.Converters;
 using QuantConnect.Securities;
 using Order = QuantConnect.Orders.Order;
 
-namespace QuantConnect.BinanceBrokerage
+namespace QuantConnect.Brokerages.Binance
 {
     /// <summary>
     /// Binance Cross Margin REST API implementation

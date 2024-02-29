@@ -14,11 +14,10 @@
 */
 
 using Newtonsoft.Json;
-using QuantConnect.Brokerages;
 using QuantConnect.Securities;
-using QuantConnect.BinanceBrokerage.Converters;
+using QuantConnect.Brokerages.Binance.Converters;
 
-namespace QuantConnect.BinanceBrokerage
+namespace QuantConnect.Brokerages.Binance
 {
     /// <summary>
     /// Binance Spot REST API implementation
