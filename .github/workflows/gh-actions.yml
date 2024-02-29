@@ -40,7 +40,7 @@ jobs:
         run: mv Lean ../Lean
 
       - name: Build
-        run: dotnet build /p:Configuration=Release /v:quiet /p:WarningLevel=1 QuantConnect.BinanceBrokerage.sln
+        run: dotnet build /p:Configuration=Release /v:quiet /p:WarningLevel=1 QuantConnect.Brokerages.Binance.sln
 
       - name: Run Tests
-        run: dotnet test ./QuantConnect.BinanceBrokerage.Tests/bin/Release/QuantConnect.BinanceBrokerage.Tests.dll
+        run: dotnet test ./QuantConnect.BinanceBrokerage.Tests/bin/Release/QuantConnect.Brokerages.Binance.Tests.dll
