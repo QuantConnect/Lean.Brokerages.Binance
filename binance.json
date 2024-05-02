@@ -13,5 +13,24 @@
 	"order-types": ["Market", "Limit", "Stop Limit"],
 	"assets": ["Crypto Spot", "Crypto Futures"], 
 	"brokerage-url": "https://www.binance.com/",
-	"documentation": "/docs/v2/cloud-platform/live-trading/brokerages/binance"
+	"documentation": "/docs/v2/cloud-platform/live-trading/brokerages/binance",
+	"module-specification": {
+		"download": {
+			"data-types": [
+				"Trade"
+			],
+			"resolutions": [
+				"Minute",
+				"Hour",
+				"Daily"
+			],
+			"security-types": [
+				"Crypto"
+			],
+			"markets": [
+				"Binance",
+				"BinanceUS"
+			]
+		}
+	}
 }
