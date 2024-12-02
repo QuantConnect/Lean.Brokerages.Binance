@@ -243,6 +243,10 @@ namespace QuantConnect.Brokerages.Binance
                         order = new StopLimitOrder(orderLeanSymbol, orderQuantity, item.StopPrice, item.Price, orderTime);
                         break;
 
+                    case "STOP_MARKET":
+                        order = new StopMarketOrder(orderLeanSymbol, orderQuantity, item.StopPrice, orderTime);
+                        break;
+
                     default:
                         OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
                             "BinanceBrokerage.GetOpenOrders: Unsupported order type returned from brokerage: " + item.Type));

@@ -17,9 +17,11 @@ using Moq;
 using System;
 using System.Linq;
 using NUnit.Framework;
+using QuantConnect.Orders;
 using QuantConnect.Interfaces;
 using QuantConnect.Securities;
 using QuantConnect.Configuration;
+using System.Collections.Generic;
 using QuantConnect.Tests.Brokerages;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Tests.Common.Securities;
@@ -41,16 +43,17 @@ namespace QuantConnect.Brokerages.Binance.Tests
         {
             var securities = new SecurityManager(new TimeKeeper(DateTime.UtcNow, TimeZones.NewYork))
             {
-                { Symbol, CreateSecurity(Symbol) }
+                { Symbol, BinanceBrokerageTests.CreateSecurity(Symbol) }
             };
             var algorithmSettings = new AlgorithmSettings();
             var transactions = new SecurityTransactionManager(null, securities);
-            transactions.SetOrderProcessor(new FakeOrderProcessor());
+            var orderProcessor = new FakeOrderProcessor();
+            transactions.SetOrderProcessor(orderProcessor);
 
             var algorithm = new Mock<IAlgorithm>();
             algorithm.Setup(a => a.Transactions).Returns(transactions);
             algorithm.Setup(a => a.Securities).Returns(securities);
-            algorithm.Setup(a => a.BrokerageModel).Returns(new BinanceBrokerageModel());
+            algorithm.Setup(a => a.BrokerageModel).Returns(new BinanceFuturesBrokerageModel(AccountType.Margin));
             algorithm.Setup(a => a.Portfolio).Returns(new SecurityPortfolioManager(securities, transactions, algorithmSettings));
 
             var apiKey = Config.Get("binance-api-key");
@@ -65,7 +68,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 apiSecret,
                 apiUrl);
 
-            return new BinanceFuturesBrokerage(
+            var broekrage = new BinanceFuturesBrokerage(
                     apiKey,
                     apiSecret,
                     apiUrl,
@@ -74,6 +77,26 @@ namespace QuantConnect.Brokerages.Binance.Tests
                     new AggregationManager(),
                     null
                 );
+
+            broekrage.OrdersStatusChanged += (sender, orderEvents) =>
+            {
+                var orderEvent = orderEvents[0];
+
+                switch (orderEvent.Status)
+                {
+                    case OrderStatus.Submitted:
+                        var externalOrder = OrderProvider.GetOrderById(orderEvent.OrderId);
+                        orderProcessor.AddOrder(externalOrder);
+                        break;
+                    case OrderStatus.Canceled:
+                    case OrderStatus.Filled:
+                        var order = orderProcessor.GetOrderById(orderEvent.OrderId);
+                        order.Status = orderEvent.Status;
+                        break;
+                };
+            };
+
+            return broekrage;
         }
 
         /// <summary>
@@ -92,21 +115,26 @@ namespace QuantConnect.Brokerages.Binance.Tests
         /// </summary>
         protected override SecurityType SecurityType => Symbol.SecurityType;
 
-        public static TestCaseData[] OrderParametersFutures => new[]
+        public static IEnumerable<TestCaseData> OrderParametersFutures
         {
-            new TestCaseData(new MarketOrderTestParameters(StaticSymbol)).SetName("MarketOrder"),
-            new TestCaseData(new LimitOrderTestParameters(StaticSymbol, HighPrice, LowPrice)).SetName("LimitOrder"),
-        };
+            get
+            {
+                yield return new TestCaseData(new MarketOrderTestParameters(StaticSymbol));
+                yield return new TestCaseData(new LimitOrderTestParameters(StaticSymbol, HighPrice, LowPrice));
+                yield return new TestCaseData(new StopMarketOrderTestParameters(StaticSymbol, HighPrice, LowPrice));
+            }
+
+        }
 
         /// <summary>
         /// Gets a high price for the specified symbol so a limit sell won't fill
         /// </summary>
-        private const decimal HighPrice = 0.5m;
+        private const decimal HighPrice = 3m;
 
         /// <summary>
         /// Gets a low price for the specified symbol so a limit buy won't fill
         /// </summary>
-        private const decimal LowPrice = 0.2m;
+        private const decimal LowPrice = 2m;
 
         /// <summary>
         /// Gets the current market price of the specified security

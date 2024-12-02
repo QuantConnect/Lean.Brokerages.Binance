@@ -26,6 +26,8 @@ using QuantConnect.Logging;
 using System.Threading;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Tests.Brokerages;
+using QuantConnect.Data.Market;
+using QuantConnect.Data;
 
 namespace QuantConnect.Brokerages.Binance.Tests
 {
@@ -204,6 +206,31 @@ namespace QuantConnect.Brokerages.Binance.Tests
         protected override void ModifyOrderUntilFilled(Order order, OrderTestParameters parameters, double secondsTimeout = 90)
         {
             Assert.Pass("Order update not supported. Please cancel and re-create.");
+        }
+
+        public static Security CreateSecurity(Symbol symbol)
+        {
+            var timezone = TimeZones.NewYork;
+
+            var config = new SubscriptionDataConfig(
+                typeof(TradeBar),
+                symbol,
+                Resolution.Hour,
+                timezone,
+                timezone,
+                true,
+                false,
+                false);
+
+            return new Security(
+                SecurityExchangeHours.AlwaysOpen(timezone),
+                config,
+                new Cash(Currencies.USD, 0, 1),
+                SymbolProperties.GetDefault(Currencies.USD),
+                ErrorCurrencyConverter.Instance,
+                RegisteredSecurityDataTypesProvider.Null,
+                new SecurityCache()
+            );
         }
     }
 }
