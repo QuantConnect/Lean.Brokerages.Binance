@@ -30,7 +30,15 @@ namespace QuantConnect.Brokerages.Binance
     /// </summary>
     public class BinanceFuturesRestApiClient : BinanceBaseRestApiClient
     {
+        /// <summary>
+        /// The API endpoint prefix for Binance Futures API version 1.
+        /// </summary>
         private const string _prefix = "/fapi/v1";
+
+        /// <summary>
+        /// The API endpoint prefix for Binance Futures API version 2.
+        /// </summary>
+        private const string _prefixV2 = "/fapi/v2";
 
         protected override JsonConverter CreateAccountConverter() => new FuturesAccountConverter();
 
@@ -73,8 +81,27 @@ namespace QuantConnect.Brokerages.Binance
         /// <returns>The list of all account holdings</returns>
         public override List<Holding> GetAccountHoldings()
         {
+            return GetAccountHoldings(_prefixV2);
+        }
+
+        public override BalanceEntry[] GetCashBalance()
+        {
+            return GetCashBalance(_prefixV2);
+        }
+
+        /// <summary>
+        /// Retrieves the current account holdings for a specified API prefix from the Binance brokerage.
+        /// </summary>
+        /// <param name="apiPrefix">
+        /// The API endpoint prefix to be used for the request, typically including the base URL and version.
+        /// </param>
+        /// <returns>
+        /// A list of <see cref="Holding"/> objects representing the current positions with non-zero amounts.
+        /// </returns>
+        protected List<Holding> GetAccountHoldings(string apiPrefix)
+        {
             var queryString = $"timestamp={GetNonce()}";
-            var endpoint = $"/fapi/v2/account?{queryString}&signature={AuthenticationToken(queryString)}";
+            var endpoint = $"{apiPrefix}/account?{queryString}&signature={AuthenticationToken(queryString)}";
             var request = new RestRequest(endpoint, Method.GET);
             request.AddHeader(KeyHeader, ApiKey);
 
@@ -95,11 +122,6 @@ namespace QuantConnect.Brokerages.Binance
                     Quantity = x.PositionAmt,
                 })
                 .ToList();
-        }
-
-        public override BalanceEntry[] GetCashBalance()
-        {
-            return GetCashBalance("/fapi/v2");
         }
     }
 }
