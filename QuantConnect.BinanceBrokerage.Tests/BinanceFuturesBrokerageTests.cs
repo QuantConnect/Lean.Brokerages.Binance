@@ -68,7 +68,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 apiSecret,
                 apiUrl);
 
-            var broekrage = new BinanceFuturesBrokerage(
+            var brokerage = new BinanceFuturesBrokerage(
                     apiKey,
                     apiSecret,
                     apiUrl,
@@ -78,7 +78,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                     null
                 );
 
-            broekrage.OrdersStatusChanged += (sender, orderEvents) =>
+            brokerage.OrdersStatusChanged += (sender, orderEvents) =>
             {
                 var orderEvent = orderEvents[0];
 
@@ -96,7 +96,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 };
             };
 
-            return broekrage;
+            return brokerage;
         }
 
         /// <summary>
