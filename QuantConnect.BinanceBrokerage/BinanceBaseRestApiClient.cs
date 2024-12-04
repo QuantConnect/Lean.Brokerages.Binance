@@ -282,7 +282,7 @@ namespace QuantConnect.Brokerages.Binance
                 case StopLimitOrder stopLimitOrder:
                     if (order.SecurityType == SecurityType.CryptoFuture)
                     {
-                        throw new NotSupportedException($"BinanceBrokerage.ConvertOrderType: Unsupported order type: {order.Type} for {SecurityType.CryptoFuture}");
+                        throw new NotSupportedException($"{nameof(BinanceBaseRestApiClient)}.{nameof(CreateOrderBody)}: Unsupported order type: {order.Type} for {SecurityType.CryptoFuture}");
                     }
                     var ticker = GetTickerPrice(order);
                     var stopPrice = stopLimitOrder.StopPrice;
@@ -299,8 +299,17 @@ namespace QuantConnect.Brokerages.Binance
                     body["stopPrice"] = stopPrice.ToStringInvariant();
                     body["price"] = stopLimitOrder.LimitPrice.ToStringInvariant();
                     break;
+                case StopMarketOrder stopMarketOrder:
+                    if (order.SecurityType == SecurityType.Crypto)
+                    {
+                        throw new NotSupportedException($"{nameof(BinanceBaseRestApiClient)}.{nameof(CreateOrderBody)}: Unsupported order type: {order.Type} for {SecurityType.Crypto}");
+                    }
+                    body["type"] = "STOP_MARKET";
+                    body["stopPrice"] = stopMarketOrder.StopPrice.ToStringInvariant();
+
+                    break;
                 default:
-                    throw new NotSupportedException($"BinanceBrokerage.ConvertOrderType: Unsupported order type: {order.Type}");
+                    throw new NotSupportedException($"{nameof(BinanceBaseRestApiClient)}.{nameof(CreateOrderBody)}: Unsupported order type: {order.Type}");
             }
 
             return body;

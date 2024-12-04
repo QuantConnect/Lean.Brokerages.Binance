@@ -14,6 +14,8 @@
 */
 
 using QuantConnect.Securities;
+using System.Collections.Generic;
+using QuantConnect.Brokerages.Binance.Messages;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -45,6 +47,24 @@ namespace QuantConnect.Brokerages.Binance
             )
             : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl)
         {
+        }
+
+        /// <summary>
+        /// Gets all open positions
+        /// </summary>
+        /// <returns>The list of all account holdings</returns>
+        public override List<Holding> GetAccountHoldings()
+        {
+            return GetAccountHoldings(_prefix);
+        }
+
+        /// <summary>
+        /// Gets the total account cash balance for specified account type
+        /// </summary>
+        /// <returns></returns>
+        public override BalanceEntry[] GetCashBalance()
+        {
+            return GetCashBalance(_prefix);
         }
     }
 }
