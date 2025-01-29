@@ -243,7 +243,7 @@ namespace QuantConnect.Brokerages.Binance
                 order,
                 DateTime.UtcNow,
                 OrderFee.Zero,
-                "Binance Order Event")
+                response.Content)
             { Status = OrderStatus.Invalid });
             OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
 
@@ -588,7 +588,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <returns></returns>
         protected long GetNonce()
         {
-            return (long)(Time.TimeStamp() * 1000);
+            return (long)Time.DateTimeToUnixTimeStampMilliseconds(DateTime.UtcNow);
         }
 
         /// <summary>
