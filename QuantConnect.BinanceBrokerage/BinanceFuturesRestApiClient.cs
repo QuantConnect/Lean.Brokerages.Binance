@@ -100,12 +100,9 @@ namespace QuantConnect.Brokerages.Binance
         /// </returns>
         protected List<Holding> GetAccountHoldings(string apiPrefix)
         {
-            var queryString = $"timestamp={GetNonce()}";
-            var endpoint = $"{apiPrefix}/account?{queryString}&signature={AuthenticationToken(queryString)}";
-            var request = new RestRequest(endpoint, Method.GET);
-            request.AddHeader(KeyHeader, ApiKey);
+            var request = new RestRequest($"{apiPrefix}/account", Method.GET);
 
-            var response = ExecuteRestRequest(request);
+            var response = ExecuteRestRequestWithSignature(request);
             if (response.StatusCode != HttpStatusCode.OK)
             {
                 throw new Exception($"BinanceBrokerage.GetCashBalance: request failed: [{(int)response.StatusCode}] {response.StatusDescription}, Content: {response.Content}, ErrorMessage: {response.ErrorMessage}");
