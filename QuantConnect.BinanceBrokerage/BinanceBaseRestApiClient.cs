@@ -151,12 +151,9 @@ namespace QuantConnect.Brokerages.Binance
         /// <returns></returns>
         protected BalanceEntry[] GetCashBalance(string apiPrefix)
         {
-            var queryString = $"timestamp={GetNonce()}";
-            var endpoint = $"{apiPrefix}/account?{queryString}&signature={AuthenticationToken(queryString)}";
-            var request = new RestRequest(endpoint, Method.GET);
-            request.AddHeader(KeyHeader, ApiKey);
+            var request = new RestRequest($"{apiPrefix}/account", Method.GET);
 
-            var response = ExecuteRestRequest(request);
+            var response = ExecuteRestRequestWithSignature(request);
             if (response.StatusCode != HttpStatusCode.OK)
             {
                 throw new Exception($"BinanceBrokerage.GetCashBalance: request failed: [{(int)response.StatusCode}] {response.StatusDescription}, Content: {response.Content}, ErrorMessage: {response.ErrorMessage}");
@@ -182,12 +179,9 @@ namespace QuantConnect.Brokerages.Binance
         /// <returns></returns>
         public IEnumerable<Messages.OpenOrder> GetOpenOrders()
         {
-            var queryString = $"timestamp={GetNonce()}";
-            var endpoint = $"{ApiPrefix}/openOrders?{queryString}&signature={AuthenticationToken(queryString)}";
-            var request = new RestRequest(endpoint, Method.GET);
-            request.AddHeader(KeyHeader, ApiKey);
+            var request = new RestRequest($"{ApiPrefix}/openOrders", Method.GET);
 
-            var response = ExecuteRestRequest(request);
+            var response = ExecuteRestRequestWithSignature(request);
             if (response.StatusCode != HttpStatusCode.OK)
             {
                 throw new Exception($"BinanceBrokerage.GetCashBalance: request failed: [{(int)response.StatusCode}] {response.StatusDescription}, Content: {response.Content}, ErrorMessage: {response.ErrorMessage}");
@@ -205,17 +199,9 @@ namespace QuantConnect.Brokerages.Binance
         {
             var body = CreateOrderBody(order);
 
-            body["timestamp"] = GetNonce();
-            body["signature"] = AuthenticationToken(body.ToQueryString());
             var request = new RestRequest($"{ApiPrefix}/order", Method.POST);
-            request.AddHeader(KeyHeader, ApiKey);
-            request.AddParameter(
-                "application/x-www-form-urlencoded",
-                Encoding.UTF8.GetBytes(body.ToQueryString()),
-                ParameterType.RequestBody
-            );
 
-            var response = ExecuteRestRequest(request);
+            var response = ExecuteRestRequestWithSignature(request, body);
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 var raw = JsonConvert.DeserializeObject<Messages.NewOrder>(response.Content);
@@ -243,7 +229,7 @@ namespace QuantConnect.Brokerages.Binance
                 order,
                 DateTime.UtcNow,
                 OrderFee.Zero,
-                "Binance Order Event")
+                response.Content)
             { Status = OrderStatus.Invalid });
             OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
 
@@ -329,23 +315,10 @@ namespace QuantConnect.Brokerages.Binance
             };
             foreach (var id in order.BrokerId)
             {
-                if (body.ContainsKey("signature"))
-                {
-                    body.Remove("signature");
-                }
                 body["orderId"] = id;
-                body["timestamp"] = GetNonce();
-                body["signature"] = AuthenticationToken(body.ToQueryString());
-
                 var request = new RestRequest($"{ApiPrefix}/order", Method.DELETE);
-                request.AddHeader(KeyHeader, ApiKey);
-                request.AddParameter(
-                    "application/x-www-form-urlencoded",
-                    Encoding.UTF8.GetBytes(body.ToQueryString()),
-                    ParameterType.RequestBody
-                );
 
-                var response = ExecuteRestRequest(request);
+                var response = ExecuteRestRequestWithSignature(request, body);
                 success.Add(response.StatusCode == HttpStatusCode.OK);
             }
 
@@ -436,8 +409,8 @@ namespace QuantConnect.Brokerages.Binance
             {
                 throw new Exception($"BinanceBrokerage.GetCashBalance: request failed: [{(int)response.StatusCode}] {response.StatusDescription}, Content: {response.Content}, ErrorMessage: {response.ErrorMessage}");
             }
-            
-            return JsonConvert.DeserializeObject<PriceChangeStatistics[]>(response.Content); 
+
+            return JsonConvert.DeserializeObject<PriceChangeStatistics[]>(response.Content);
         }
 
         /// <summary>
@@ -480,7 +453,7 @@ namespace QuantConnect.Brokerages.Binance
                 if (ExecuteRestRequest(request).StatusCode == HttpStatusCode.OK)
                 {
                     SessionId = null;
-                };
+                }
             }
         }
 
@@ -536,12 +509,35 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
-        /// If an IP address exceeds a certain number of requests per minute
-        /// HTTP 429 return code is used when breaking a request rate limit.
+        /// Executes a REST request with a signature if required, handling rate limits and retries on HTTP 429 responses.
         /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
+        /// <param name="request">The REST request to execute.</param>
+        /// <param name="body">Optional request body parameters.</param>
+        /// <returns>The response from the REST API.</returns>
+        protected IRestResponse ExecuteRestRequestWithSignature(IRestRequest request, IDictionary<string, object> body = default)
+        {
+            return ExecuteRestRequestInternal(request, body, true);
+        }
+
+        /// <summary>
+        /// Executes a REST request while handling rate limits and retries on HTTP 429 responses.
+        /// </summary>
+        /// <param name="request">The REST request to execute.</param>
+        /// <returns>The response from the REST API.</returns>
         protected IRestResponse ExecuteRestRequest(IRestRequest request)
+        {
+            return ExecuteRestRequestInternal(request, null, false);
+        }
+
+        /// <summary>
+        /// Executes a REST request internally with optional signature authentication.
+        /// Handles rate limiting and retries failed requests due to HTTP 429 responses.
+        /// </summary>
+        /// <param name="request">The REST request to execute.</param>
+        /// <param name="body">Optional request body parameters.</param>
+        /// <param name="useSignature">Indicates whether to include a signature in the request.</param>
+        /// <returns>The response from the REST API.</returns>
+        private IRestResponse ExecuteRestRequestInternal(IRestRequest request, IDictionary<string, object> body, bool useSignature)
         {
             const int maxAttempts = 10;
             var attempts = 0;
@@ -555,6 +551,30 @@ namespace QuantConnect.Brokerages.Binance
                         "The API request has been rate limited. To avoid this message, please reduce the frequency of API calls."));
 
                     _restRateLimiter.WaitToProceed();
+                }
+
+                if (useSignature)
+                {
+                    request.AddOrUpdateHeader(KeyHeader, ApiKey);
+
+                    if (body != null)
+                    {
+                        // Remove the old 'signature' before generating a new authenticated token
+                        body.Remove("signature");
+
+                        body["timestamp"] = GetNonce();
+                        body["signature"] = AuthenticationToken(body.ToQueryString());
+
+                        request.AddOrUpdateParameter("application/x-www-form-urlencoded", Encoding.UTF8.GetBytes(body.ToQueryString()), ParameterType.RequestBody);
+                    }
+                    else
+                    {
+                        var nonce = GetNonce();
+                        var queryString = $"timestamp={nonce}";
+
+                        request.AddOrUpdateParameter("timestamp", nonce.ToStringInvariant(), ParameterType.QueryString);
+                        request.AddOrUpdateParameter("signature", AuthenticationToken(queryString), ParameterType.QueryString);
+                    }
                 }
 
                 response = _restClient.Execute(request);
@@ -588,7 +608,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <returns></returns>
         protected long GetNonce()
         {
-            return (long)(Time.TimeStamp() * 1000);
+            return (long)Time.DateTimeToUnixTimeStampMilliseconds(DateTime.UtcNow);
         }
 
         /// <summary>
