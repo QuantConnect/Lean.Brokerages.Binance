@@ -454,7 +454,6 @@ namespace QuantConnect.Brokerages.Binance
                 {
                     SessionId = null;
                 }
-                ;
             }
         }
 
