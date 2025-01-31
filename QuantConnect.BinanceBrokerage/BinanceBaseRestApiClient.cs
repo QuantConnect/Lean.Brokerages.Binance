@@ -544,12 +544,8 @@ namespace QuantConnect.Brokerages.Binance
             var attempts = 0;
             IRestResponse response;
 
-            request.AddOrUpdateHeader(KeyHeader, ApiKey);
-
             do
             {
-                var requestWithoutSignature = request;
-
                 if (!_restRateLimiter.WaitToProceed(TimeSpan.Zero))
                 {
                     Log.Trace("Brokerage.OnMessage(): " + new BrokerageMessageEvent(BrokerageMessageType.Warning, "RateLimit",
@@ -560,23 +556,29 @@ namespace QuantConnect.Brokerages.Binance
 
                 if (useSignature)
                 {
+                    request.AddOrUpdateHeader(KeyHeader, ApiKey);
+
                     if (body != null)
                     {
+                        // Remove the old 'signature' before generating a new authenticated token
+                        body.Remove("signature");
+
                         body["timestamp"] = GetNonce();
                         body["signature"] = AuthenticationToken(body.ToQueryString());
 
-                        requestWithoutSignature.AddParameter("application/x-www-form-urlencoded", Encoding.UTF8.GetBytes(body.ToQueryString()), ParameterType.RequestBody);
+                        request.AddOrUpdateParameter("application/x-www-form-urlencoded", Encoding.UTF8.GetBytes(body.ToQueryString()), ParameterType.RequestBody);
                     }
                     else
                     {
                         var nonce = GetNonce();
                         var queryString = $"timestamp={nonce}";
-                        requestWithoutSignature.AddQueryParameter("timestamp", nonce.ToStringInvariant());
-                        requestWithoutSignature.AddQueryParameter("signature", AuthenticationToken(queryString));
+
+                        request.AddOrUpdateParameter("timestamp", nonce.ToStringInvariant(), ParameterType.QueryString);
+                        request.AddOrUpdateParameter("signature", AuthenticationToken(queryString), ParameterType.QueryString);
                     }
                 }
 
-                response = _restClient.Execute(requestWithoutSignature);
+                response = _restClient.Execute(request);
                 // 429 status code: Too Many Requests
             } while (++attempts < maxAttempts && (int)response.StatusCode == 429);
 
