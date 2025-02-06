@@ -22,6 +22,7 @@ using RestSharp;
 using System.Net;
 using System;
 using System.Linq;
+using QuantConnect.Util;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -71,7 +72,7 @@ namespace QuantConnect.Brokerages.Binance
             string apiSecret,
             string restApiUrl
             )
-            : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl)
+            : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, new RateGate(1200, TimeSpan.FromMinutes(1)))
         {
         }
 

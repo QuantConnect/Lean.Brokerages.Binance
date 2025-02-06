@@ -41,9 +41,13 @@ namespace QuantConnect.Brokerages.Binance
     {
         private readonly ISecurityProvider _securityProvider;
         private readonly IRestClient _restClient;
-        private readonly RateGate _restRateLimiter = new(10, TimeSpan.FromSeconds(1));
         private readonly object _listenKeyLocker = new();
-        
+
+        /// <summary>
+        /// The rate limiter used to control the frequency of REST API requests.
+        /// </summary>
+        private readonly RateGate _restRateLimiter;
+
         /// <summary>
         /// Provides a cancellation mechanism for ongoing HTTP requests.
         /// Used to signal request termination when needed, such as during shutdown
@@ -118,21 +122,24 @@ namespace QuantConnect.Brokerages.Binance
         /// </summary>
         /// <param name="symbolMapper">The symbol mapper.</param>
         /// <param name="securityProvider">The holdings provider.</param>
-        /// <param name="apiKey">The Binance API key</param>
-        /// <param name="apiSecret">The The Binance API secret</param>
-        /// <param name="restApiUrl">The Binance API rest url</param>
+        /// <param name="apiKey">The Binance API key.</param>
+        /// <param name="apiSecret">The Binance API secret.</param>
+        /// <param name="restApiUrl">The Binance REST API URL.</param>
+        /// <param name="restRateLimiter">The rate limiter for REST API requests. Defaults to 10 requests per second if not provided.</param>
         public BinanceBaseRestApiClient(
             ISymbolMapper symbolMapper,
             ISecurityProvider securityProvider,
             string apiKey,
             string apiSecret,
-            string restApiUrl)
+            string restApiUrl,
+            RateGate restRateLimiter = null)
         {
             SymbolMapper = symbolMapper;
             _securityProvider = securityProvider;
             _restClient = new RestClient(restApiUrl);
             ApiKey = apiKey;
             ApiSecret = apiSecret;
+            _restRateLimiter = restRateLimiter ?? new(100, TimeSpan.FromSeconds(10));
         }
 
         /// <summary>
