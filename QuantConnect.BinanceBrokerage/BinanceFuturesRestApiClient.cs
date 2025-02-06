@@ -72,7 +72,7 @@ namespace QuantConnect.Brokerages.Binance
             string apiSecret,
             string restApiUrl
             )
-            : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, new RateGate(1200, TimeSpan.FromMinutes(1)))
+            : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, new RateGate(300, TimeSpan.FromSeconds(10)))
         {
         }
 
