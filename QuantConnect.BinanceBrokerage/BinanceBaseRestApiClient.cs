@@ -29,6 +29,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using Order = QuantConnect.Orders.Order;
 
 namespace QuantConnect.Brokerages.Binance
@@ -42,6 +43,13 @@ namespace QuantConnect.Brokerages.Binance
         private readonly IRestClient _restClient;
         private readonly RateGate _restRateLimiter = new(10, TimeSpan.FromSeconds(1));
         private readonly object _listenKeyLocker = new();
+        
+        /// <summary>
+        /// Provides a cancellation mechanism for ongoing HTTP requests.
+        /// Used to signal request termination when needed, such as during shutdown
+        /// or when exceeding retry limits.
+        /// </summary>
+        private readonly CancellationTokenSource _cancellationToken = new();
 
         /// <summary>
         /// The symbol mapper instance
@@ -501,6 +509,7 @@ namespace QuantConnect.Brokerages.Binance
         public void Dispose()
         {
             _restRateLimiter.DisposeSafely();
+            _cancellationToken.DisposeSafely();
         }
 
         protected virtual string GetBaseDataEndpoint()
@@ -578,8 +587,9 @@ namespace QuantConnect.Brokerages.Binance
                 }
 
                 response = _restClient.Execute(request);
-                // 429 status code: Too Many Requests
-            } while (++attempts < maxAttempts && (int)response.StatusCode == 429);
+
+                // Retry on HTTP 429 (Too Many Requests), with exponential backoff using WaitOne as an additional safeguard.
+            } while (++attempts < maxAttempts && (int)response.StatusCode == 429 && !_cancellationToken.Token.WaitHandle.WaitOne(TimeSpan.FromSeconds(1 * attempts)));
 
             return response;
         }
