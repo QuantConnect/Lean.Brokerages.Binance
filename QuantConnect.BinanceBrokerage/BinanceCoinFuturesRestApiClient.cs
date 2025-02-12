@@ -16,6 +16,7 @@
 using QuantConnect.Securities;
 using System.Collections.Generic;
 using QuantConnect.Brokerages.Binance.Messages;
+using QuantConnect.Util;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -43,9 +44,10 @@ namespace QuantConnect.Brokerages.Binance
             ISecurityProvider securityProvider,
             string apiKey,
             string apiSecret,
-            string restApiUrl
+            string restApiUrl,
+            RateGate restRateLimiter = null
             )
-            : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl)
+            : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, restRateLimiter)
         {
         }
 

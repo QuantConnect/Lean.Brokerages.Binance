@@ -185,7 +185,7 @@ namespace QuantConnect.Brokerages.Binance
         public override List<Holding> GetAccountHoldings()
         {
             var holdings = ApiClient.GetAccountHoldings();
-            if(holdings.Count > 0)
+            if (holdings.Count > 0)
             {
                 return holdings;
             }
@@ -373,7 +373,7 @@ namespace QuantConnect.Brokerages.Binance
             var period = request.Resolution.ToTimeSpan();
             var restApiClient = _apiClientLazy?.IsValueCreated == true
                 ? ApiClient
-                : GetApiClient(_symbolMapper, null, null, null, null);
+                : GetApiClient(_symbolMapper, null, null, null, null, null);
             foreach (var kline in restApiClient.GetHistory(request))
             {
                 yield return new TradeBar()
@@ -571,7 +571,7 @@ namespace QuantConnect.Brokerages.Binance
                 // and user brokerage choise is actually applied
                 _apiClientLazy = new Lazy<BinanceBaseRestApiClient>(() =>
                 {
-                    var apiClient = GetApiClient(_symbolMapper, _algorithm?.Portfolio, restApiUrl, apiKey, apiSecret);
+                    var apiClient = GetApiClient(_symbolMapper, _algorithm?.Portfolio, restApiUrl, apiKey, apiSecret, job.DeploymentTarget);
 
                     apiClient.OrderSubmit += (s, e) => OnOrderSubmit(e);
                     apiClient.OrderStatusChanged += (s, e) => OnOrderEvent(e);
@@ -626,14 +626,18 @@ namespace QuantConnect.Brokerages.Binance
         /// Get's the appropiate API client to use
         /// </summary>
         protected virtual BinanceBaseRestApiClient GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider,
-            string restApiUrl, string apiKey, string apiSecret)
+            string restApiUrl, string apiKey, string apiSecret, DeploymentTarget? deploymentTarget)
         {
             restApiUrl ??= Config.Get("binance-api-url", "https://api.binance.com");
-
+            RateGate rateGate = null;
+            if (deploymentTarget == DeploymentTarget.CloudPlatform)
+            {
+                rateGate = new RateGate(1, TimeSpan.FromSeconds(1));
+            }
             return (_algorithm == null || _algorithm.BrokerageModel.AccountType == AccountType.Cash)
-                 ? new BinanceSpotRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl)
+                 ? new BinanceSpotRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate)
                  : new BinanceCrossMarginRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret,
-                     restApiUrl);
+                     restApiUrl, rateGate);
         }
 
         /// <summary>
@@ -721,7 +725,7 @@ namespace QuantConnect.Brokerages.Binance
         {
             try
             {
-                var restClient = GetApiClient(_symbolMapper, null, restApiUrl, null, null);
+                var restClient = GetApiClient(_symbolMapper, null, restApiUrl, null, null, null);
                 var symbolAndTradeCount = restClient.GetTickerPriceChangeStatistics();
 
                 var result = new Dictionary<Symbol, int>();

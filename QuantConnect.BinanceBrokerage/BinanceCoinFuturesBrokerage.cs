@@ -20,6 +20,7 @@ using QuantConnect.Securities;
 using QuantConnect.Interfaces;
 using QuantConnect.Configuration;
 using QuantConnect.Brokerages.Binance.Constants;
+using System;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -95,10 +96,14 @@ namespace QuantConnect.Brokerages.Binance
         /// Get's the appropiate API client to use
         /// </summary>
         protected override BinanceBaseRestApiClient GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider,
-            string restApiUrl, string apiKey, string apiSecret)
+            string restApiUrl, string apiKey, string apiSecret, DeploymentTarget? deploymentTarget)
         {
             restApiUrl ??= Config.Get(BinanceCoinFuturesBrokerageFactory.ApiUrlKeyName, "https://dapi.binance.com");
-
+            RateGate rateGate = null;
+            if (deploymentTarget == DeploymentTarget.CloudPlatform)
+            {
+                rateGate = new RateGate(10, TimeSpan.FromSeconds(1));
+            }
             return new BinanceCoinFuturesRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl);
         }
 

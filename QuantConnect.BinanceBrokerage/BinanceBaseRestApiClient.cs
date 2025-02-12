@@ -139,7 +139,7 @@ namespace QuantConnect.Brokerages.Binance
             _restClient = new RestClient(restApiUrl);
             ApiKey = apiKey;
             ApiSecret = apiSecret;
-            _restRateLimiter = restRateLimiter ?? new(100, TimeSpan.FromSeconds(10));
+            _restRateLimiter = restRateLimiter ?? new(10, TimeSpan.FromSeconds(1));
         }
 
         /// <summary>

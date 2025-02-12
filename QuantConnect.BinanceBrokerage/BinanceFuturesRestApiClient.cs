@@ -70,9 +70,10 @@ namespace QuantConnect.Brokerages.Binance
             ISecurityProvider securityProvider,
             string apiKey,
             string apiSecret,
-            string restApiUrl
+            string restApiUrl,
+            RateGate restRateLimiter = null
             )
-            : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, new RateGate(300, TimeSpan.FromSeconds(10)))
+            : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, restRateLimiter)
         {
         }
 
