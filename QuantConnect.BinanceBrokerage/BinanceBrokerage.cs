@@ -571,7 +571,12 @@ namespace QuantConnect.Brokerages.Binance
                 // and user brokerage choise is actually applied
                 _apiClientLazy = new Lazy<BinanceBaseRestApiClient>(() =>
                 {
-                    var apiClient = GetApiClient(_symbolMapper, _algorithm?.Portfolio, restApiUrl, apiKey, apiSecret, job.DeploymentTarget);
+                    RateGate rateGate = null;
+                    if (job.DeploymentTarget == DeploymentTarget.CloudPlatform)
+                    {
+                        rateGate = new RateGate(3, TimeSpan.FromSeconds(1));
+                    }
+                    var apiClient = GetApiClient(_symbolMapper, _algorithm?.Portfolio, restApiUrl, apiKey, apiSecret, rateGate);
 
                     apiClient.OrderSubmit += (s, e) => OnOrderSubmit(e);
                     apiClient.OrderStatusChanged += (s, e) => OnOrderEvent(e);
@@ -626,14 +631,14 @@ namespace QuantConnect.Brokerages.Binance
         /// Get's the appropiate API client to use
         /// </summary>
         protected virtual BinanceBaseRestApiClient GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider,
-            string restApiUrl, string apiKey, string apiSecret, DeploymentTarget? deploymentTarget)
+            string restApiUrl, string apiKey, string apiSecret, RateGate rateGate)
         {
             restApiUrl ??= Config.Get("binance-api-url", "https://api.binance.com");
-            RateGate rateGate = null;
+            /* RateGate rateGate = null;
             if (deploymentTarget == DeploymentTarget.CloudPlatform)
             {
-                rateGate = new RateGate(1, TimeSpan.FromSeconds(1));
-            }
+                rateGate = new RateGate(3, TimeSpan.FromSeconds(1));
+            } */
             return (_algorithm == null || _algorithm.BrokerageModel.AccountType == AccountType.Cash)
                  ? new BinanceSpotRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate)
                  : new BinanceCrossMarginRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret,

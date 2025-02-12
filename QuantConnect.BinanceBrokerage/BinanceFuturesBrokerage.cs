@@ -97,14 +97,10 @@ namespace QuantConnect.Brokerages.Binance
         /// Get's the appropiate API client to use
         /// </summary>
         protected override BinanceBaseRestApiClient GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider,
-            string restApiUrl, string apiKey, string apiSecret, DeploymentTarget? deploymentTarget)
+            string restApiUrl, string apiKey, string apiSecret, RateGate rateGate)
         {
             restApiUrl ??= Config.Get(BinanceFuturesBrokerageFactory.ApiUrlKeyName, "https://fapi.binance.com");
-            RateGate rateGate = null;
-            if (deploymentTarget != DeploymentTarget.CloudPlatform)
-            {
-                rateGate = new RateGate(30, TimeSpan.FromSeconds(1));
-            }
+            rateGate = new RateGate(rateGate == null ? 30 : 10, TimeSpan.FromSeconds(1));
             return new BinanceFuturesRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate);
         }
 
