@@ -94,13 +94,26 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
+        /// Returns the appropriate rate limit gate based on the deployment target.
+        /// </summary>
+        /// <param name="deploymentTarget">The target deployment.</param>
+        /// <returns>A RateGate instance with the defined request limits.</returns>
+        protected override RateGate GetRateGate(DeploymentTarget deploymentTarget)
+        {
+            if (deploymentTarget == DeploymentTarget.CloudPlatform)
+            {
+                return new RateGate(10, TimeSpan.FromSeconds(1));
+            }
+            return new RateGate(30, TimeSpan.FromSeconds(1));
+        }
+
+        /// <summary>
         /// Get's the appropiate API client to use
         /// </summary>
         protected override BinanceBaseRestApiClient GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider,
             string restApiUrl, string apiKey, string apiSecret, RateGate rateGate)
         {
             restApiUrl ??= Config.Get(BinanceFuturesBrokerageFactory.ApiUrlKeyName, "https://fapi.binance.com");
-            rateGate = new RateGate(rateGate == null ? 30 : 10, TimeSpan.FromSeconds(1));
             return new BinanceFuturesRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate);
         }
 

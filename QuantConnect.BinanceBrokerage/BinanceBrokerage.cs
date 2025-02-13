@@ -571,11 +571,7 @@ namespace QuantConnect.Brokerages.Binance
                 // and user brokerage choise is actually applied
                 _apiClientLazy = new Lazy<BinanceBaseRestApiClient>(() =>
                 {
-                    RateGate rateGate = null;
-                    if (job.DeploymentTarget == DeploymentTarget.CloudPlatform)
-                    {
-                        rateGate = new RateGate(3, TimeSpan.FromSeconds(1));
-                    }
+                    RateGate rateGate = GetRateGate(job.DeploymentTarget);
                     var apiClient = GetApiClient(_symbolMapper, _algorithm?.Portfolio, restApiUrl, apiKey, apiSecret, rateGate);
 
                     apiClient.OrderSubmit += (s, e) => OnOrderSubmit(e);
@@ -634,11 +630,6 @@ namespace QuantConnect.Brokerages.Binance
             string restApiUrl, string apiKey, string apiSecret, RateGate rateGate)
         {
             restApiUrl ??= Config.Get("binance-api-url", "https://api.binance.com");
-            /* RateGate rateGate = null;
-            if (deploymentTarget == DeploymentTarget.CloudPlatform)
-            {
-                rateGate = new RateGate(3, TimeSpan.FromSeconds(1));
-            } */
             return (_algorithm == null || _algorithm.BrokerageModel.AccountType == AccountType.Cash)
                  ? new BinanceSpotRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate)
                  : new BinanceCrossMarginRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret,
@@ -691,6 +682,20 @@ namespace QuantConnect.Brokerages.Binance
             );
 
             return true;
+        }
+
+        /// <summary>
+        /// Returns the appropriate rate limit gate based on the deployment target.
+        /// </summary>
+        /// <param name="deploymentTarget">The target deployment.</param>
+        /// <returns>A RateGate instance with the defined request limits.</returns>
+        protected virtual RateGate GetRateGate(DeploymentTarget deploymentTarget)
+        {
+            if (deploymentTarget == DeploymentTarget.CloudPlatform)
+            {
+                return new RateGate(3, TimeSpan.FromSeconds(1));
+            }
+            return new RateGate(10, TimeSpan.FromSeconds(1));
         }
 
         private void Send(IWebSocket webSocket, object obj)
