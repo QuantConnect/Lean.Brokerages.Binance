@@ -49,10 +49,9 @@ namespace QuantConnect.Brokerages.Binance
         private IAlgorithm _algorithm;
         private SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
 
-        // Binance allows 5 messages per second, but we still get rate limited if we send a lot of messages at that rate
-        // By sending 3 messages per second, evenly spaced out, we can keep sending messages without being limited
-        private readonly RateGate _webSocketRateLimiter = new RateGate(1, TimeSpan.FromMilliseconds(330));
-
+        // The default rate limit is 10 messages per second (30/s for futures), but for cloud deployments, it is reduced to 3/s (10/s for futures).  
+        protected RateGate WebSocketRateLimiter;
+        protected RateGate WebApiRateLimiter;
         private long _lastRequestId;
 
         private LiveNodePacket _job;
@@ -373,7 +372,7 @@ namespace QuantConnect.Brokerages.Binance
             var period = request.Resolution.ToTimeSpan();
             var restApiClient = _apiClientLazy?.IsValueCreated == true
                 ? ApiClient
-                : GetApiClient(_symbolMapper, null, null, null, null, null);
+                : GetApiClient(_symbolMapper, null, null, null, null, WebApiRateLimiter);
             foreach (var kline in restApiClient.GetHistory(request))
             {
                 yield return new TradeBar()
@@ -500,7 +499,7 @@ namespace QuantConnect.Brokerages.Binance
             {
                 ApiClient.DisposeSafely();
             }
-            _webSocketRateLimiter.DisposeSafely();
+            WebSocketRateLimiter.DisposeSafely();
             SubscriptionManager.DisposeSafely();
         }
 
@@ -538,6 +537,7 @@ namespace QuantConnect.Brokerages.Binance
 
             ValidateSubscription();
 
+            InitializeRateLimiters(job.DeploymentTarget);
             base.Initialize(wssUrl, new WebSocketClientWrapper(), null, apiKey, apiSecret);
             _job = job;
             _algorithm = algorithm;
@@ -571,8 +571,7 @@ namespace QuantConnect.Brokerages.Binance
                 // and user brokerage choise is actually applied
                 _apiClientLazy = new Lazy<BinanceBaseRestApiClient>(() =>
                 {
-                    RateGate rateGate = GetRateGate(job.DeploymentTarget);
-                    var apiClient = GetApiClient(_symbolMapper, _algorithm?.Portfolio, restApiUrl, apiKey, apiSecret, rateGate);
+                    var apiClient = GetApiClient(_symbolMapper, _algorithm?.Portfolio, restApiUrl, apiKey, apiSecret, WebApiRateLimiter);
 
                     apiClient.OrderSubmit += (s, e) => OnOrderSubmit(e);
                     apiClient.OrderStatusChanged += (s, e) => OnOrderEvent(e);
@@ -685,24 +684,21 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
-        /// Returns the appropriate rate limit gate based on the deployment target.
+        /// Initializes the rate limiters based on the deployment target.
         /// </summary>
         /// <param name="deploymentTarget">The target deployment.</param>
-        /// <returns>A RateGate instance with the defined request limits.</returns>
-        protected virtual RateGate GetRateGate(DeploymentTarget deploymentTarget)
+        protected virtual void InitializeRateLimiters(DeploymentTarget deploymentTarget)
         {
-            if (deploymentTarget == DeploymentTarget.CloudPlatform)
-            {
-                return new RateGate(3, TimeSpan.FromSeconds(1));
-            }
-            return new RateGate(10, TimeSpan.FromSeconds(1));
+            var maxRequests = deploymentTarget == DeploymentTarget.CloudPlatform ? 3 : 10;
+            WebApiRateLimiter = new RateGate(maxRequests, TimeSpan.FromSeconds(1));
+            WebSocketRateLimiter = new RateGate(maxRequests, TimeSpan.FromSeconds(1));
         }
 
         private void Send(IWebSocket webSocket, object obj)
         {
             var json = JsonConvert.SerializeObject(obj);
 
-            _webSocketRateLimiter.WaitToProceed();
+            WebSocketRateLimiter.WaitToProceed();
 
             if (Log.DebuggingEnabled)
             {
@@ -735,7 +731,7 @@ namespace QuantConnect.Brokerages.Binance
         {
             try
             {
-                var restClient = GetApiClient(_symbolMapper, null, restApiUrl, null, null, null);
+                var restClient = GetApiClient(_symbolMapper, null, restApiUrl, null, null, WebApiRateLimiter);
                 var symbolAndTradeCount = restClient.GetTickerPriceChangeStatistics();
 
                 var result = new Dictionary<Symbol, int>();

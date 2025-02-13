@@ -20,7 +20,6 @@ using QuantConnect.Securities;
 using QuantConnect.Interfaces;
 using QuantConnect.Configuration;
 using QuantConnect.Brokerages.Binance.Constants;
-using System;
 
 namespace QuantConnect.Brokerages.Binance
 {
