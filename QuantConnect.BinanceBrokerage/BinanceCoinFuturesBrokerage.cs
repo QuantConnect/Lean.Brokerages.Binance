@@ -95,11 +95,10 @@ namespace QuantConnect.Brokerages.Binance
         /// Get's the appropiate API client to use
         /// </summary>
         protected override BinanceBaseRestApiClient GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider,
-            string restApiUrl, string apiKey, string apiSecret)
+            string restApiUrl, string apiKey, string apiSecret, RateGate rateGate)
         {
             restApiUrl ??= Config.Get(BinanceCoinFuturesBrokerageFactory.ApiUrlKeyName, "https://dapi.binance.com");
-
-            return new BinanceCoinFuturesRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl);
+            return new BinanceCoinFuturesRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate);
         }
 
         /// <summary>

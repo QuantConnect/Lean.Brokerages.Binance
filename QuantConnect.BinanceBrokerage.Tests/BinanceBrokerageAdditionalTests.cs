@@ -14,14 +14,18 @@
 */
 
 using Moq;
-using NUnit.Framework;
-using QuantConnect.Configuration;
-using QuantConnect.Interfaces;
-using QuantConnect.Lean.Engine.DataFeeds;
-using QuantConnect.Securities;
-using QuantConnect.Tests.Common.Securities;
-using QuantConnect.Util;
 using System;
+using RestSharp;
+using System.Text;
+using NUnit.Framework;
+using Newtonsoft.Json;
+using QuantConnect.Util;
+using QuantConnect.Securities;
+using QuantConnect.Interfaces;
+using System.Collections.Generic;
+using QuantConnect.Configuration;
+using QuantConnect.Lean.Engine.DataFeeds;
+using QuantConnect.Tests.Common.Securities;
 
 namespace QuantConnect.Brokerages.Binance.Tests
 {
@@ -106,5 +110,48 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 null
             );
         }
+
+        [Test]
+        public void GetRateLimitsByEachBinanceType()
+        {
+            var restClient = new RestClient();
+            var exchangeInfoRequest = new RestRequest("exchangeInfo", RestSharp.Method.GET);
+
+            var binanceUrls = new (string name, string baseUrl)[]
+            {
+                new("BinanceUS", "https://api.binance.us/api/v3/"),
+                new("Binance", "https://api.binance.com/api/v3/"),
+                new("BinanceCoinFutures", "https://dapi.binance.com/dapi/v1/"),
+                new("BinanceFutures", "https://fapi.binance.com/fapi/v1/")
+            };
+
+            var stringBuilder = new StringBuilder();
+            foreach (var (name, baseUrl) in binanceUrls)
+            {
+                restClient.BaseUrl = new Uri(baseUrl);
+                var response = restClient.Execute(exchangeInfoRequest);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    stringBuilder.AppendLine($"Access to {name} is restricted (Forbidden). Skipping...");
+                    continue;
+                }
+
+                Assert.IsNotNull(response);
+                var exchangeInfo = JsonConvert.DeserializeObject<ExchangeInfo>(response.Content);
+
+                stringBuilder.AppendLine($"Rate Limits for {name}:");
+                foreach (var rateLimit in exchangeInfo.RateLimits)
+                {
+                    stringBuilder.AppendLine($"  - {rateLimit}");
+                }
+                stringBuilder.AppendLine();
+            }
+
+            Logging.Log.Trace(stringBuilder.ToString());
+        }
+
+        public readonly record struct ExchangeInfo(IReadOnlyCollection<RateLimit> RateLimits);
+        public readonly record struct RateLimit(string RateLimitType, string Interval, int IntervalNum, int Limit);
     }
 }

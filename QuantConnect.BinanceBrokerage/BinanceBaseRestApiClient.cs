@@ -29,6 +29,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using Order = QuantConnect.Orders.Order;
 
 namespace QuantConnect.Brokerages.Binance
@@ -40,8 +41,19 @@ namespace QuantConnect.Brokerages.Binance
     {
         private readonly ISecurityProvider _securityProvider;
         private readonly IRestClient _restClient;
-        private readonly RateGate _restRateLimiter = new(10, TimeSpan.FromSeconds(1));
         private readonly object _listenKeyLocker = new();
+
+        /// <summary>
+        /// The rate limiter used to control the frequency of REST API requests.
+        /// </summary>
+        private readonly RateGate _restRateLimiter;
+
+        /// <summary>
+        /// Provides a cancellation mechanism for ongoing HTTP requests.
+        /// Used to signal request termination when needed, such as during shutdown
+        /// or when exceeding retry limits.
+        /// </summary>
+        private readonly CancellationTokenSource _cancellationToken = new();
 
         /// <summary>
         /// The symbol mapper instance
@@ -110,21 +122,24 @@ namespace QuantConnect.Brokerages.Binance
         /// </summary>
         /// <param name="symbolMapper">The symbol mapper.</param>
         /// <param name="securityProvider">The holdings provider.</param>
-        /// <param name="apiKey">The Binance API key</param>
-        /// <param name="apiSecret">The The Binance API secret</param>
-        /// <param name="restApiUrl">The Binance API rest url</param>
+        /// <param name="apiKey">The Binance API key.</param>
+        /// <param name="apiSecret">The Binance API secret.</param>
+        /// <param name="restApiUrl">The Binance REST API URL.</param>
+        /// <param name="restRateLimiter">The rate limiter for REST API requests. Defaults to 10 requests per second if not provided.</param>
         public BinanceBaseRestApiClient(
             ISymbolMapper symbolMapper,
             ISecurityProvider securityProvider,
             string apiKey,
             string apiSecret,
-            string restApiUrl)
+            string restApiUrl,
+            RateGate restRateLimiter)
         {
             SymbolMapper = symbolMapper;
             _securityProvider = securityProvider;
             _restClient = new RestClient(restApiUrl);
             ApiKey = apiKey;
             ApiSecret = apiSecret;
+            _restRateLimiter = restRateLimiter;
         }
 
         /// <summary>
@@ -500,7 +515,7 @@ namespace QuantConnect.Brokerages.Binance
         /// </summary>
         public void Dispose()
         {
-            _restRateLimiter.DisposeSafely();
+            _cancellationToken.DisposeSafely();
         }
 
         protected virtual string GetBaseDataEndpoint()
@@ -578,8 +593,9 @@ namespace QuantConnect.Brokerages.Binance
                 }
 
                 response = _restClient.Execute(request);
-                // 429 status code: Too Many Requests
-            } while (++attempts < maxAttempts && (int)response.StatusCode == 429);
+
+                // Retry on HTTP 429 (Too Many Requests), with exponential backoff using WaitOne as an additional safeguard.
+            } while (++attempts < maxAttempts && (int)response.StatusCode == 429 && !_cancellationToken.Token.WaitHandle.WaitOne(TimeSpan.FromSeconds(1 * attempts)));
 
             return response;
         }

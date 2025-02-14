@@ -16,6 +16,7 @@
 using Newtonsoft.Json;
 using QuantConnect.Securities;
 using QuantConnect.Brokerages.Binance.Converters;
+using QuantConnect.Util;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -46,9 +47,10 @@ namespace QuantConnect.Brokerages.Binance
             ISecurityProvider securityProvider,
             string apiKey,
             string apiSecret,
-            string restApiUrl
+            string restApiUrl,
+            RateGate restRateLimiter
             )
-            : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl)
+            : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, restRateLimiter)
         {
         }
 

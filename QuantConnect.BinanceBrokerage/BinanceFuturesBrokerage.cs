@@ -20,6 +20,7 @@ using QuantConnect.Securities;
 using QuantConnect.Interfaces;
 using QuantConnect.Configuration;
 using QuantConnect.Brokerages.Binance.Constants;
+using System;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -93,14 +94,25 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
+        /// Returns a rate limiter configured based on the deployment target.
+        /// </summary>
+        /// <param name="deploymentTarget">The deployment target.</param>
+        /// <returns>A RateGate instance with the appropriate limits.</returns>
+        protected override RateGate GetRateLimiter(DeploymentTarget deploymentTarget)
+        {
+            // Lower limits for CloudPlatform since all deployments share one IP
+            var maxRequests = deploymentTarget == DeploymentTarget.CloudPlatform ? 100 : 300;
+            return new RateGate(maxRequests, TimeSpan.FromSeconds(10));
+        }
+
+        /// <summary>
         /// Get's the appropiate API client to use
         /// </summary>
         protected override BinanceBaseRestApiClient GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider,
-            string restApiUrl, string apiKey, string apiSecret)
+            string restApiUrl, string apiKey, string apiSecret, RateGate rateGate)
         {
             restApiUrl ??= Config.Get(BinanceFuturesBrokerageFactory.ApiUrlKeyName, "https://fapi.binance.com");
-
-            return new BinanceFuturesRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl);
+            return new BinanceFuturesRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate);
         }
 
         /// <summary>
