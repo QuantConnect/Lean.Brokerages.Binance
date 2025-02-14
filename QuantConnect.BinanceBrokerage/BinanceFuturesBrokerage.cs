@@ -101,8 +101,8 @@ namespace QuantConnect.Brokerages.Binance
         protected override RateGate GetRateLimiter(DeploymentTarget deploymentTarget)
         {
             // Lower limits for CloudPlatform since all deployments share one IP
-            var maxRequests = deploymentTarget == DeploymentTarget.CloudPlatform ? 10 : 30;
-            return new RateGate(maxRequests, TimeSpan.FromSeconds(1));
+            var maxRequests = deploymentTarget == DeploymentTarget.CloudPlatform ? 100 : 300;
+            return new RateGate(maxRequests, TimeSpan.FromSeconds(10));
         }
 
         /// <summary>
