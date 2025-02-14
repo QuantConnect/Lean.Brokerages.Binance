@@ -94,14 +94,14 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
-        /// Initializes the rate limiter based on the deployment target.
+        /// Returns a rate limiter configured based on the deployment target.
         /// </summary>
-        /// <param name="deploymentTarget">The target deployment.</param>
-        protected override void InitializeRateLimiters(DeploymentTarget deploymentTarget)
+        /// <param name="deploymentTarget">The deployment target.</param>
+        /// <returns>A RateGate instance with the appropriate limits.</returns>
+        protected override RateGate GetRateLimiter(DeploymentTarget deploymentTarget)
         {
             var maxRequests = deploymentTarget == DeploymentTarget.CloudPlatform ? 10 : 30;
-            WebApiRateLimiter = new RateGate(maxRequests, TimeSpan.FromSeconds(1));
-            WebSocketRateLimiter = new RateGate(maxRequests, TimeSpan.FromSeconds(1));
+            return new RateGate(maxRequests, TimeSpan.FromSeconds(1));
         }
 
         /// <summary>

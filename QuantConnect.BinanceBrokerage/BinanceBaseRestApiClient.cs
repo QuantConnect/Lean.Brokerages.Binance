@@ -132,14 +132,14 @@ namespace QuantConnect.Brokerages.Binance
             string apiKey,
             string apiSecret,
             string restApiUrl,
-            RateGate restRateLimiter = null)
+            RateGate restRateLimiter)
         {
             SymbolMapper = symbolMapper;
             _securityProvider = securityProvider;
             _restClient = new RestClient(restApiUrl);
             ApiKey = apiKey;
             ApiSecret = apiSecret;
-            _restRateLimiter = restRateLimiter ?? new(10, TimeSpan.FromSeconds(1));
+            _restRateLimiter = restRateLimiter;
         }
 
         /// <summary>
@@ -515,7 +515,6 @@ namespace QuantConnect.Brokerages.Binance
         /// </summary>
         public void Dispose()
         {
-            _restRateLimiter.DisposeSafely();
             _cancellationToken.DisposeSafely();
         }
 
