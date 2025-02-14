@@ -71,7 +71,7 @@ namespace QuantConnect.Brokerages.Binance
             string apiKey,
             string apiSecret,
             string restApiUrl,
-            RateGate restRateLimiter = null
+            RateGate restRateLimiter
             )
             : base(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, restRateLimiter)
         {
