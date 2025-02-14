@@ -692,6 +692,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <returns>A RateGate instance with the appropriate limits.</returns>
         protected virtual RateGate GetRateLimiter(DeploymentTarget deploymentTarget)
         {
+            // Lower limits for CloudPlatform since all deployments share one IP
             var maxRequests = deploymentTarget == DeploymentTarget.CloudPlatform ? 3 : 10;
             return new RateGate(maxRequests, TimeSpan.FromSeconds(1));
         }
