@@ -501,8 +501,8 @@ namespace QuantConnect.Brokerages.Binance
                 ApiClient.DisposeSafely();
             }
             _webSocketRateLimiter.DisposeSafely();
-            _webApiRateLimiter.DisposeSafely();
             SubscriptionManager.DisposeSafely();
+            _webApiRateLimiter.DisposeSafely();
         }
 
         /// <summary>
