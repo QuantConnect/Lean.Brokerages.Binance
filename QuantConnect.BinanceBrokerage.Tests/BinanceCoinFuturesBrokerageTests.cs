@@ -25,6 +25,7 @@ using QuantConnect.Configuration;
 using QuantConnect.Tests.Brokerages;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Tests.Common.Securities;
+using QuantConnect.Util;
 
 namespace QuantConnect.Brokerages.Binance.Tests
 {
@@ -32,6 +33,26 @@ namespace QuantConnect.Brokerages.Binance.Tests
     public partial class BinanceCoinFuturesBrokerageTests : BrokerageTests
     {
         private BinanceBaseRestApiClient _binanceApi;
+        private RateGate _apiRageGate;
+
+        private RateGate ApiRateGate
+        {
+            get
+            {
+                if (_apiRageGate == null)
+                {
+                    _apiRageGate = new RateGate(100, TimeSpan.FromSeconds(10));
+                }
+                return _apiRageGate;
+            }
+        }
+
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
+        {
+            _apiRageGate?.DisposeSafely();
+            _binanceApi?.DisposeSafely();
+        }
 
         /// <summary>
         /// Creates the brokerage under test and connects it
@@ -66,7 +87,8 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 algorithm.Object?.Portfolio,
                 apiKey,
                 apiSecret,
-                apiUrl);
+                apiUrl,
+                ApiRateGate);
 
             var brokerage = new BinanceCoinFuturesBrokerage(
                     apiKey,
@@ -75,7 +97,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                     websocketUrl,
                     algorithm.Object,
                     new AggregationManager(),
-                    null
+                    new Packets.LiveNodePacket()
                 );
 
             brokerage.OrdersStatusChanged += (sender, orderEvents) =>
@@ -122,6 +144,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 yield return new TestCaseData(new MarketOrderTestParameters(StaticSymbol));
                 yield return new TestCaseData(new LimitOrderTestParameters(StaticSymbol, HighPrice, LowPrice));
                 yield return new TestCaseData(new StopMarketOrderTestParameters(StaticSymbol, HighPrice, LowPrice));
+                yield return new TestCaseData(new StopLimitOrderTestParameters(StaticSymbol, HighPrice, LowPrice));
             }
         }
 

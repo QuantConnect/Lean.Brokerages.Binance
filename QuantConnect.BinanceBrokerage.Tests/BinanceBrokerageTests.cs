@@ -28,6 +28,8 @@ using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Tests.Brokerages;
 using QuantConnect.Data.Market;
 using QuantConnect.Data;
+using QuantConnect.Util;
+using QuantConnect.Packets;
 
 namespace QuantConnect.Brokerages.Binance.Tests
 {
@@ -35,6 +37,26 @@ namespace QuantConnect.Brokerages.Binance.Tests
     public partial class BinanceBrokerageTests : BrokerageTests
     {
         private BinanceBaseRestApiClient _binanceApi;
+        private RateGate _apiRageGate;
+
+        protected RateGate ApiRateGate
+        {
+            get
+            {
+                if (_apiRageGate == null)
+                {
+                    _apiRageGate = new RateGate(100, TimeSpan.FromSeconds(10));
+                }
+                return _apiRageGate;
+            }
+        }
+
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
+        {
+            _apiRageGate?.DisposeSafely();
+            _binanceApi?.DisposeSafely();
+        }
 
         /// <summary>
         /// Creates the brokerage under test and connects it
@@ -68,7 +90,8 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 algorithm.Object?.Portfolio,
                 apiKey,
                 apiSecret,
-                apiUrl);
+                apiUrl,
+                ApiRateGate);
 
             return new BinanceBrokerage(
                     apiKey,
@@ -77,7 +100,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                     websocketUrl,
                     algorithm.Object,
                     new AggregationManager(),
-                    null
+                    new LiveNodePacket()
                 );
         }
 
