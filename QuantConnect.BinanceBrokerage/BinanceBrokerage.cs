@@ -234,12 +234,13 @@ namespace QuantConnect.Brokerages.Binance
                         break;
 
                     case "STOP_LOSS":
-                    case "TAKE_PROFIT":
+                    case "TAKE_PROFIT" when orderLeanSymbol.SecurityType == SecurityType.Crypto:
                         order = new StopMarketOrder(orderLeanSymbol, orderQuantity, item.StopPrice, orderTime);
                         break;
 
                     case "STOP_LOSS_LIMIT":
                     case "TAKE_PROFIT_LIMIT":
+                    case "STOP" or "TAKE_PROFIT" when orderLeanSymbol.SecurityType == SecurityType.CryptoFuture:
                         order = new StopLimitOrder(orderLeanSymbol, orderQuantity, item.StopPrice, item.Price, orderTime);
                         break;
 

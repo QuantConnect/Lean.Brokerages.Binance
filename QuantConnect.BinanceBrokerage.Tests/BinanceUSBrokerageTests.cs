@@ -63,7 +63,8 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 algorithm.Object?.Portfolio,
                 apiKey,
                 apiSecret,
-                apiUrl);
+                apiUrl,
+                ApiRateGate);
 
             return new BinanceUSBrokerage(
                     apiKey,
@@ -72,7 +73,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                     websocketUrl,
                     algorithm.Object,
                     new AggregationManager(),
-                    null
+                    new Packets.LiveNodePacket()
                 );
         }
 

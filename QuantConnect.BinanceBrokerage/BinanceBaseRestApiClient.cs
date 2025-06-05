@@ -281,19 +281,26 @@ namespace QuantConnect.Brokerages.Binance
                     body["type"] = "MARKET";
                     break;
                 case StopLimitOrder stopLimitOrder:
-                    if (order.SecurityType == SecurityType.CryptoFuture)
-                    {
-                        throw new NotSupportedException($"{nameof(BinanceBaseRestApiClient)}.{nameof(CreateOrderBody)}: Unsupported order type: {order.Type} for {SecurityType.CryptoFuture}");
-                    }
-                    var ticker = GetTickerPrice(order);
+                    var tickerPrice = GetTickerPrice(order);
                     var stopPrice = stopLimitOrder.StopPrice;
                     if (order.Direction == OrderDirection.Sell)
                     {
-                        body["type"] = stopPrice <= ticker ? "STOP_LOSS_LIMIT" : "TAKE_PROFIT_LIMIT";
+                        if (order.SecurityType == SecurityType.CryptoFuture)
+                        {
+                            body["type"] = stopPrice <= tickerPrice ? "STOP" : "TAKE_PROFIT";
+                        }
+                        else
+                        {
+                            body["type"] = stopPrice <= tickerPrice ? "STOP_LOSS_LIMIT" : "TAKE_PROFIT_LIMIT";
+                        }
+                    }
+                    else if (order.SecurityType == SecurityType.CryptoFuture)
+                    {
+                        body["type"] = stopPrice <= tickerPrice ? "TAKE_PROFIT" : "STOP";
                     }
                     else
                     {
-                        body["type"] = stopPrice <= ticker ? "TAKE_PROFIT_LIMIT" : "STOP_LOSS_LIMIT";
+                        body["type"] = stopPrice <= tickerPrice ? "TAKE_PROFIT_LIMIT" : "STOP_LOSS_LIMIT";
                     }
 
                     body["timeInForce"] = "GTC";
