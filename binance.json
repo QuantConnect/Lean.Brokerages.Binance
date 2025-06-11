@@ -1,4 +1,7 @@
 {
+	"name" : "Binance",
+	"logo-url" : "https://cdn.quantconnect.com/i/tu/binance-hp-logo.svg",
+	"min-deposit" : "None",
 	"description": "Binance is an international crypto exchange handling a substantial fraction of global crypto trading. They have voluntarily withdrawn from many countries for failing to meet regulatory requirements. We support their cash and margin accounts.",
 	
 	"platforms-features": [
