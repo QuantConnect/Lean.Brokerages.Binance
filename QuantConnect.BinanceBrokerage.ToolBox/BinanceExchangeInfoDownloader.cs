@@ -53,7 +53,7 @@ namespace QuantConnect.Brokerages.Binance.ToolBox
         /// <returns>Enumerable of exchange info</returns>
         public IEnumerable<string> Get()
         {
-            var data = Extensions.DownloadData($"{_restApiHost}/api/v3/exchangeInfo");
+            var data = QuantConnect.Extensions.DownloadData($"{_restApiHost}/api/v3/exchangeInfo");
 
             foreach (var symbol in JsonConvert.DeserializeObject<ExchangeInfo>(data).Symbols)
             {
@@ -82,7 +82,7 @@ namespace QuantConnect.Brokerages.Binance.ToolBox
             {
                 foreach (var endpoint in new[] { _binanceFutureCryptoApiEndpoint, _binanceFutureCoinApiEndpoint })
                 {
-                    var futureData = Extensions.DownloadData($"{endpoint}/v1/exchangeInfo");
+                    var futureData = QuantConnect.Extensions.DownloadData($"{endpoint}/v1/exchangeInfo");
 
                     foreach (var symbol in JsonConvert.DeserializeObject<ExchangeInfo>(futureData).Symbols)
                     {
