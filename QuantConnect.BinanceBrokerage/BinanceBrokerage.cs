@@ -540,7 +540,7 @@ namespace QuantConnect.Brokerages.Binance
 
             ValidateSubscription();
 
-            _webApiRateLimiter = GetRateLimiter(job.DeploymentTarget);
+            _webApiRateLimiter = GetRateLimiter(job is null ? DeploymentTarget.LocalPlatform : job.DeploymentTarget);
             base.Initialize(wssUrl, new WebSocketClientWrapper(), null, apiKey, apiSecret);
             _job = job;
             _algorithm = algorithm;
