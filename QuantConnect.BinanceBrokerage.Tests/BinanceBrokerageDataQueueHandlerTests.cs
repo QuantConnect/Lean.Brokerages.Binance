@@ -96,7 +96,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                             {
                                 trade.Set();
                             }
-                            Log.Debug("{baseData}");
+                            Log.Debug($"{baseData}");
                         }
                     });
             }
