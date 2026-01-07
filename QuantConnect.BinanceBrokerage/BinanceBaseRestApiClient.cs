@@ -161,6 +161,18 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
+        /// Resolves the REST endpoint used to place an order for the given order type.
+        /// </summary>
+        /// <param name="orderType">The type of order being placed.</param>
+        /// <returns>
+        /// The endpoint path used for placing the order.
+        /// </returns>
+        protected virtual string ResolveOrderEndpoint(OrderType orderType)
+        {
+            return "order";
+        }
+
+        /// <summary>
         /// Gets the total account cash balance for specified account type
         /// </summary>
         /// <returns></returns>
@@ -214,7 +226,7 @@ namespace QuantConnect.Brokerages.Binance
         {
             var body = CreateOrderBody(order);
 
-            var request = new RestRequest($"{ApiPrefix}/order", Method.POST);
+            var request = new RestRequest($"{ApiPrefix}/{ResolveOrderEndpoint(order.Type)}", Method.POST);
 
             var response = ExecuteRestRequestWithSignature(request, body);
             if (response.StatusCode == HttpStatusCode.OK)

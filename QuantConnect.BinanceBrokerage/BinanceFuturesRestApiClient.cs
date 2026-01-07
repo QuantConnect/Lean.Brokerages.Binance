@@ -1,4 +1,4 @@
-﻿/*
+/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  *
@@ -23,6 +23,8 @@ using System.Net;
 using System;
 using System.Linq;
 using QuantConnect.Util;
+using QuantConnect.Orders;
+using QuantConnect.Brokerages.Binance.Extensions;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -121,6 +123,44 @@ namespace QuantConnect.Brokerages.Binance
                     Quantity = x.PositionAmt,
                 })
                 .ToList();
+        }
+
+        /// <summary>
+        /// Resolves the REST endpoint used to place an order, selecting
+        /// the algorithmic order endpoint when required.
+        /// </summary>
+        /// <param name="orderType">The type of order being placed.</param>
+        /// <returns>
+        /// The endpoint path used for placing the order.
+        /// </returns>
+        protected override string ResolveOrderEndpoint(OrderType orderType)
+        {
+            switch (orderType)
+            {
+                case OrderType.StopLimit:
+                case OrderType.StopMarket:
+                    return "algoOrder";
+                default:
+                    return base.ResolveOrderEndpoint(orderType);
+            }
+        }
+
+        /// <summary>
+        /// Create account new order body payload
+        /// </summary>
+        /// <param name="order">Lean order</param>
+        protected override IDictionary<string, object> CreateOrderBody(Orders.Order order)
+        {
+            var body = base.CreateOrderBody(order);
+            switch (order)
+            {
+                case StopLimitOrder:
+                case StopMarketOrder:
+                    body.RenameKey("stopPrice", "triggerPrice");
+                    break;
+            }
+            body["algoType"] = "CONDITIONAL";
+            return body;
         }
     }
 }
