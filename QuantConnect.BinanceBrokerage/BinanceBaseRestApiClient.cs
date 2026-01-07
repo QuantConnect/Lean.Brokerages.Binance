@@ -336,6 +336,23 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
+        /// Create account cancel order body payload
+        /// </summary>
+        /// <param name="order">Lean order</param>
+        protected virtual IEnumerable<IDictionary<string, object>> CreateCancelOrderBody(Order order)
+        {
+            var symbol = SymbolMapper.GetBrokerageSymbol(order.Symbol);
+            foreach (var id in order.BrokerId)
+            {
+                yield return new Dictionary<string, object>()
+                {
+                    ["symbol"] = symbol,
+                    ["orderId"] = id
+                };
+            }
+        }
+
+        /// <summary>
         /// Cancels the order with the specified ID
         /// </summary>
         /// <param name="order">The order to cancel</param>
@@ -343,14 +360,9 @@ namespace QuantConnect.Brokerages.Binance
         public bool CancelOrder(Order order)
         {
             var success = new List<bool>();
-            IDictionary<string, object> body = new Dictionary<string, object>()
+            foreach (var body in CreateCancelOrderBody(order))
             {
-                { "symbol", SymbolMapper.GetBrokerageSymbol(order.Symbol) }
-            };
-            foreach (var id in order.BrokerId)
-            {
-                body["orderId"] = id;
-                var request = new RestRequest($"{ApiPrefix}/order", Method.DELETE);
+                var request = new RestRequest($"{ApiPrefix}/{ResolveOrderEndpoint(order.Type)}", Method.DELETE);
 
                 var response = ExecuteRestRequestWithSignature(request, body);
                 success.Add(response.StatusCode == HttpStatusCode.OK);
