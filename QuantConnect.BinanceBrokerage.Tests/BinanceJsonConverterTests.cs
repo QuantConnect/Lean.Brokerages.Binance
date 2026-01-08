@@ -108,6 +108,32 @@ namespace QuantConnect.Brokerages.Binance.Tests
     ""fills"": [],
     ""selfTradePreventionMode"": ""EXPIRE_MAKER""
 }", "1258092222");
+
+                yield return new OrderResponse(OrderType.FutureAlgoStopMarket, @"{
+    ""algoId"": 2000000184401794,
+    ""clientAlgoId"": ""47Qn1gLQ29TTEJCBbQGPkb"",
+    ""algoType"": ""CONDITIONAL"",
+    ""orderType"": ""STOP_MARKET"",
+    ""symbol"": ""ACHUSDT"",
+    ""side"": ""BUY"",
+    ""positionSide"": ""BOTH"",
+    ""timeInForce"": ""GTC"",
+    ""quantity"": ""600"",
+    ""algoStatus"": ""NEW"",
+    ""triggerPrice"": ""0.0094000"",
+    ""price"": ""0.0000000"",
+    ""icebergQuantity"": null,
+    ""selfTradePreventionMode"": ""EXPIRE_MAKER"",
+    ""workingType"": ""CONTRACT_PRICE"",
+    ""priceMatch"": ""NONE"",
+    ""closePosition"": false,
+    ""priceProtect"": false,
+    ""reduceOnly"": false,
+    ""createTime"": 1767883004685,
+    ""updateTime"": 1767883004685,
+    ""triggerTime"": 0,
+    ""goodTillDate"": 0
+}", "2000000184401794");
             }
         }
 
@@ -178,6 +204,34 @@ namespace QuantConnect.Brokerages.Binance.Tests
         ""origQuoteOrderQty"": ""0.00000000"",
         ""selfTradePreventionMode"": ""EXPIRE_MAKER""
     }", "1258673217");
+
+                yield return new OrderResponse(OrderType.FutureAlgoStopMarket, @"{
+        ""algoId"": 2000000184401794,
+        ""clientAlgoId"": ""47Qn1gLQ29TTEJCBbQGPkb"",
+        ""algoType"": ""CONDITIONAL"",
+        ""orderType"": ""STOP_MARKET"",
+        ""symbol"": ""ACHUSDT"",
+        ""side"": ""BUY"",
+        ""positionSide"": ""BOTH"",
+        ""timeInForce"": ""GTC"",
+        ""quantity"": ""600.0"",
+        ""algoStatus"": ""NEW"",
+        ""actualOrderId"": """",
+        ""actualQty"": ""0.0"",
+        ""triggerPrice"": ""0.0094"",
+        ""price"": ""0.0"",
+        ""icebergQuantity"": null,
+        ""selfTradePreventionMode"": ""EXPIRE_MAKER"",
+        ""workingType"": ""CONTRACT_PRICE"",
+        ""priceMatch"": ""NONE"",
+        ""closePosition"": false,
+        ""priceProtect"": false,
+        ""reduceOnly"": false,
+        ""createTime"": 1767883004685,
+        ""updateTime"": 1767883004685,
+        ""triggerTime"": 0,
+        ""goodTillDate"": 0
+    }", "2000000184401794");
             }
         }
 
@@ -193,6 +247,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
             Assert.IsFalse(string.IsNullOrEmpty(raw.Type));
             Assert.IsFalse(string.IsNullOrEmpty(raw.Status));
             Assert.AreEqual("NEW", raw.Status.ToUpperInvariant());
+            Assert.That(raw.Time, Is.GreaterThan(0), "The Time <= 0");
 
             Assert.IsFalse(string.IsNullOrEmpty(raw.Side));
             switch (raw.Side)
@@ -228,7 +283,8 @@ namespace QuantConnect.Brokerages.Binance.Tests
             SpotStopLimit,
             SpotLimit,
             SpotMarket,
-            FutureAlgoStopLimit
+            FutureAlgoStopLimit,
+            FutureAlgoStopMarket
         }
     }
 }

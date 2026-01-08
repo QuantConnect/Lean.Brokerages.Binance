@@ -47,41 +47,44 @@ namespace QuantConnect.Brokerages.Binance.Converters
         {
             var jToken = JToken.Load(reader);
 
-            var order = CreateOrder(jToken);
+            var order = jToken["algoId"] != null ? new AlgoOrder() : new Order();
 
             using (var tokenReader = jToken.CreateReader())
             {
                 serializer.Populate(tokenReader, order);
             }
 
+            if (order.Time == 0)
+            {
+                order.Time = ExtractOrderTime(jToken);
+            }
+
             return order;
         }
 
         /// <summary>
-        /// Creates an <see cref="Order"/> instance based on the identifiers
-        /// present in the JSON payload.
+        /// List of possible JSON keys that may contain the order's timestamp.
         /// </summary>
-        /// <param name="token">The JSON token representing an order.</param>
-        /// <returns>
-        /// A concrete <see cref="Order"/> instance (<see cref="AlgoOrder"/> or <see cref="NewOrder"/>).
-        /// </returns>
-        private static Order CreateOrder(JToken token)
+        private static readonly string[] TimeKeys = ["transactTime", "createTime", "time"];
+
+        /// <summary>
+        /// Extracts the timestamp from a <see cref="JToken"/> using known possible keys.
+        /// Returns 0 if none of the keys are found.
+        /// </summary>
+        /// <param name="token">The <see cref="JToken"/> representing the order JSON.</param>
+        /// <returns>The timestamp as a <see cref="long"/> if found; otherwise, 0.</returns>
+        private static long ExtractOrderTime(JToken token)
         {
-            if (token["algoId"] != null)
+            foreach (var key in TimeKeys)
             {
-                return new AlgoOrder();
+                if (token[key] != null)
+                {
+                    return token[key].Value<long>();
+                }
             }
 
-            if (token["orderId"] != null)
-            {
-                return new NewOrder();
-            }
-
-            var errorMessage = "Unable to determine order type. Expected either 'orderId' or 'algoId' property, but neither was found.";
-            Logging.Log.Error($"OrderResponseConverter.CreateOrder(): {errorMessage} JSON: {token.ToString(Formatting.None)}");
-            throw new InvalidOperationException(errorMessage);
+            return 0;
         }
-
 
         /// <summary>
         /// Writes the JSON representation of the object.

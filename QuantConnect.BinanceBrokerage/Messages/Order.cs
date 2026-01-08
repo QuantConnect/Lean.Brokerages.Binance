@@ -41,12 +41,6 @@ namespace QuantConnect.Brokerages.Binance.Messages
         public decimal Quantity => string.Equals(Side, "buy", StringComparison.OrdinalIgnoreCase) ? OriginalAmount : -OriginalAmount;
     }
 
-    public class NewOrder : Order
-    {
-        [JsonProperty("transactTime")]
-        public override long Time { get; set; }
-    }
-
     public class AlgoOrder : Order
     {
         [JsonProperty("algoId")]
