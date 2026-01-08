@@ -1,4 +1,4 @@
-/*
+﻿/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  *
@@ -92,6 +92,15 @@ namespace QuantConnect.Brokerages.Binance
         public override BalanceEntry[] GetCashBalance()
         {
             return GetCashBalance(_prefixV2);
+        }
+
+        /// <summary>
+        /// Gets all orders not yet closed
+        /// </summary>
+        /// <returns>All open orders</returns>
+        public override IEnumerable<Messages.Order> GetOpenOrders()
+        {
+            return base.GetOpenOrders().Concat(GetOpenOrders(AlgoOrderEndpoints.OpenOrders));
         }
 
         /// <summary>

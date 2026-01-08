@@ -204,9 +204,14 @@ namespace QuantConnect.Brokerages.Binance
         /// Gets all orders not yet closed
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<Messages.OpenOrder> GetOpenOrders()
+        public virtual IEnumerable<Messages.Order> GetOpenOrders()
         {
-            var request = new RestRequest($"{ApiPrefix}/openOrders", Method.GET);
+            return GetOpenOrders("openOrders");
+        }
+
+        protected IEnumerable<Messages.Order> GetOpenOrders(string endpoint)
+        {
+            var request = new RestRequest($"{ApiPrefix}/{endpoint}", Method.GET);
 
             var response = ExecuteRestRequestWithSignature(request);
             if (response.StatusCode != HttpStatusCode.OK)
@@ -214,7 +219,7 @@ namespace QuantConnect.Brokerages.Binance
                 throw new Exception($"BinanceBrokerage.GetCashBalance: request failed: [{(int)response.StatusCode}] {response.StatusDescription}, Content: {response.Content}, ErrorMessage: {response.ErrorMessage}");
             }
 
-            return JsonConvert.DeserializeObject<Messages.OpenOrder[]>(response.Content);
+            return JsonConvert.DeserializeObject<Messages.Order[]>(response.Content);
         }
 
         /// <summary>
@@ -231,7 +236,7 @@ namespace QuantConnect.Brokerages.Binance
             var response = ExecuteRestRequestWithSignature(request, body);
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                var raw = JsonConvert.DeserializeObject<Messages.NewOrder>(response.Content);
+                var raw = JsonConvert.DeserializeObject<Messages.Order>(response.Content);
 
                 if (string.IsNullOrEmpty(raw?.Id))
                 {
@@ -706,7 +711,7 @@ namespace QuantConnect.Brokerages.Binance
         /// </summary>
         /// <param name="newOrder">The brokerage order submit result</param>
         /// <param name="order">The lean order</param>
-        private void OnOrderSubmit(Messages.NewOrder newOrder, Order order)
+        private void OnOrderSubmit(Messages.Order newOrder, Order order)
         {
             try
             {
@@ -717,7 +722,7 @@ namespace QuantConnect.Brokerages.Binance
                 // Generate submitted event
                 OnOrderEvent(new OrderEvent(
                     order,
-                    Time.UnixMillisecondTimeStampToDateTime(newOrder.TransactionTime),
+                    Time.UnixMillisecondTimeStampToDateTime(newOrder.Time),
                     OrderFee.Zero,
                     "Binance Order Event")
                 { Status = OrderStatus.Submitted }
