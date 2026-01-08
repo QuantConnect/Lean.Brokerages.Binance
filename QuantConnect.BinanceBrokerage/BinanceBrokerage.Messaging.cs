@@ -199,11 +199,11 @@ namespace QuantConnect.Brokerages.Binance
         {
             try
             {
-                var order = _algorithm.Transactions.GetOrdersByBrokerageId(data.OrderId)?.SingleOrDefault();
+                var order = GetLeanOrder(data.AlgoOrderId) ?? GetLeanOrder(data.OrderId);
                 if (order == null)
                 {
                     // not our order, nothing else to do here
-                    Log.Error($"BinanceBrokerage.OnFillOrder(): order not found: {data.OrderId}");
+                    Log.Error($"BinanceBrokerage.OnFillOrder(): order not found: {data.OrderId}[AlgoOrderId: {data.AlgoOrderId}");
                     return;
                 }
 
@@ -231,6 +231,11 @@ namespace QuantConnect.Brokerages.Binance
                 Log.Error(e);
                 throw;
             }
+        }
+
+        private Orders.Order GetLeanOrder(string brokerageOrderId)
+        {
+            return _algorithm.Transactions.GetOrdersByBrokerageId(brokerageOrderId)?.SingleOrDefault();
         }
     }
 }

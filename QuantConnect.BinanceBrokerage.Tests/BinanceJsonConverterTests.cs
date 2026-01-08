@@ -495,7 +495,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
         [TestCaseSource(nameof(OrderWebSocketMessages))]
         public void DeserializeWebSocketMessage(OrderResponse response)
         {
-            var (_, message, expectedOrderId) = response;
+            var (orderType, message, expectedOrderId) = response;
 
             var objData = JObject.Parse(message);
 
@@ -515,6 +515,20 @@ namespace QuantConnect.Brokerages.Binance.Tests
             Assert.IsFalse(string.IsNullOrEmpty(execution.FeeCurrency));
             Assert.Greater(execution.Fee, 0);
             Assert.IsFalse(string.IsNullOrEmpty(execution.OrderStatus));
+
+            switch (orderType)
+            {
+                case OrderType.FutureAlgoStopMarket:
+                case OrderType.FutureAlgoStopLimit:
+                    Assert.IsFalse(string.IsNullOrEmpty(execution.AlgoOrderId));
+                    break;
+                case OrderType.SpotMarket:
+                    Assert.IsTrue(string.IsNullOrEmpty(execution.AlgoOrderId));
+                    break;
+                default:
+                    Assert.IsTrue(execution.AlgoOrderId.Equals("0", StringComparison.InvariantCultureIgnoreCase));
+                    break;
+            }
         }
 
 
