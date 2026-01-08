@@ -12,16 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
-
-using Fasterflect;
+using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using QuantConnect.Brokerages.Binance.Messages;
-using System;
 
 namespace QuantConnect.Brokerages.Binance.Converters
 {
-    public class OrderResponseConverter : JsonConverter<Order>
+    /// <summary>
+    /// Base JSON converter for deserializing <see cref="Order"/> responses
+    /// using JSON content as a discriminator.
+    /// </summary>
+    public abstract class OrderResponseConverterBase : JsonConverter<Order>
     {
         /// <summary>
         /// Gets a value indicating whether this <see cref="JsonConverter"/> can write JSON.
@@ -36,6 +38,23 @@ namespace QuantConnect.Brokerages.Binance.Converters
         public override bool CanRead => true;
 
         /// <summary>
+        /// Creates an <see cref="Order"/> instance based on the provided JSON token.
+        /// </summary>
+        /// <param name="token">
+        /// The root <see cref="JToken"/> representing the JSON object being deserialized.
+        /// </param>
+        /// <returns>
+        /// A concrete <see cref="Order"/> instance that will be populated
+        /// with data from the JSON payload.
+        /// </returns>
+        /// <remarks>
+        /// Implementations should inspect the JSON token (for example, discriminator
+        /// fields such as <c>algoId</c>) and return the appropriate <see cref="Order"/>
+        /// subtype. The returned instance must not be <c>null</c>.
+        /// </remarks>
+        protected abstract Order CreateOrder(JToken token);
+
+        /// <summary>
         /// Reads the JSON representation of the object.
         /// </summary>
         /// <param name="reader">The <see cref="JsonReader"/> to read from.</param>
@@ -46,44 +65,12 @@ namespace QuantConnect.Brokerages.Binance.Converters
         public override Order ReadJson(JsonReader reader, Type objectType, Order existingValue, bool hasExistingValue, JsonSerializer serializer)
         {
             var jToken = JToken.Load(reader);
+            var order = CreateOrder(jToken);
 
-            var order = jToken["algoId"] != null ? new AlgoOrder() : new Order();
-
-            using (var tokenReader = jToken.CreateReader())
-            {
-                serializer.Populate(tokenReader, order);
-            }
-
-            if (order.Time == 0)
-            {
-                order.Time = ExtractOrderTime(jToken);
-            }
+            using var tokenReader = jToken.CreateReader();
+            serializer.Populate(tokenReader, order);
 
             return order;
-        }
-
-        /// <summary>
-        /// List of possible JSON keys that may contain the order's timestamp.
-        /// </summary>
-        private static readonly string[] TimeKeys = ["transactTime", "createTime", "time"];
-
-        /// <summary>
-        /// Extracts the timestamp from a <see cref="JToken"/> using known possible keys.
-        /// Returns 0 if none of the keys are found.
-        /// </summary>
-        /// <param name="token">The <see cref="JToken"/> representing the order JSON.</param>
-        /// <returns>The timestamp as a <see cref="long"/> if found; otherwise, 0.</returns>
-        private static long ExtractOrderTime(JToken token)
-        {
-            foreach (var key in TimeKeys)
-            {
-                if (token[key] != null)
-                {
-                    return token[key].Value<long>();
-                }
-            }
-
-            return 0;
         }
 
         /// <summary>

@@ -204,12 +204,12 @@ namespace QuantConnect.Brokerages.Binance
         /// Gets all orders not yet closed
         /// </summary>
         /// <returns></returns>
-        public virtual IEnumerable<Messages.Order> GetOpenOrders()
+        public virtual IEnumerable<Messages.OpenOrder> GetOpenOrders()
         {
             return GetOpenOrders("openOrders");
         }
 
-        protected IEnumerable<Messages.Order> GetOpenOrders(string endpoint)
+        protected IEnumerable<Messages.OpenOrder> GetOpenOrders(string endpoint)
         {
             var request = new RestRequest($"{ApiPrefix}/{endpoint}", Method.GET);
 
@@ -219,7 +219,7 @@ namespace QuantConnect.Brokerages.Binance
                 throw new Exception($"BinanceBrokerage.GetCashBalance: request failed: [{(int)response.StatusCode}] {response.StatusDescription}, Content: {response.Content}, ErrorMessage: {response.ErrorMessage}");
             }
 
-            return JsonConvert.DeserializeObject<Messages.Order[]>(response.Content);
+            return JsonConvert.DeserializeObject<Messages.OpenOrder[]>(response.Content);
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace QuantConnect.Brokerages.Binance
             var response = ExecuteRestRequestWithSignature(request, body);
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                var raw = JsonConvert.DeserializeObject<Messages.Order>(response.Content);
+                var raw = JsonConvert.DeserializeObject<Messages.NewOrder>(response.Content);
 
                 if (string.IsNullOrEmpty(raw?.Id))
                 {
@@ -711,7 +711,7 @@ namespace QuantConnect.Brokerages.Binance
         /// </summary>
         /// <param name="newOrder">The brokerage order submit result</param>
         /// <param name="order">The lean order</param>
-        private void OnOrderSubmit(Messages.Order newOrder, Order order)
+        private void OnOrderSubmit(Messages.NewOrder newOrder, Order order)
         {
             try
             {

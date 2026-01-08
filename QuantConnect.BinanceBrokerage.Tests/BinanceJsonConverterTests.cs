@@ -144,7 +144,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
         {
             var (_, json, expectedOrderId) = response;
 
-            var raw = JsonConvert.DeserializeObject<Order>(json);
+            var raw = JsonConvert.DeserializeObject<NewOrder>(json);
 
             Assert.IsNotNull(raw);
             Assert.IsFalse(string.IsNullOrEmpty(raw?.Id));
@@ -242,7 +242,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
         {
             var (orderType, json, expectedOrderId) = response;
 
-            var raw = JsonConvert.DeserializeObject<Order>(json);
+            var raw = JsonConvert.DeserializeObject<OpenOrder>(json);
 
             Assert.IsNotNull(raw);
             Assert.AreEqual(expectedOrderId, raw.Id);

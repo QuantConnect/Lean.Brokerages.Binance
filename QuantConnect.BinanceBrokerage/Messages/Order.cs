@@ -20,8 +20,7 @@ using QuantConnect.Brokerages.Binance.Converters;
 namespace QuantConnect.Brokerages.Binance.Messages
 {
 #pragma warning disable 1591
-    [JsonConverter(typeof(OrderResponseConverter))]
-    public class Order
+    public abstract class Order
     {
         [JsonProperty("orderId")]
         public virtual string Id { get; set; }
@@ -41,7 +40,20 @@ namespace QuantConnect.Brokerages.Binance.Messages
         public decimal Quantity => string.Equals(Side, "buy", StringComparison.OrdinalIgnoreCase) ? OriginalAmount : -OriginalAmount;
     }
 
-    public class AlgoOrder : Order
+    [JsonConverter(typeof(OpenOrderResponseConverter))]
+    public class OpenOrder : Order
+    {
+
+    }
+
+    [JsonConverter(typeof(NewOrderResponseConverter))]
+    public class NewOrder : OpenOrder
+    {
+        [JsonProperty("transactTime")]
+        public override long Time { get; set; }
+    }
+
+    public class AlgoOrder : NewOrder
     {
         [JsonProperty("algoId")]
         public override string Id { get; set; }
