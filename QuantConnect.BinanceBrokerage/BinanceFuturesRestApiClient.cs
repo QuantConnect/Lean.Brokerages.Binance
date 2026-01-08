@@ -1,4 +1,4 @@
-﻿/*
+/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  *
@@ -25,6 +25,7 @@ using System.Linq;
 using QuantConnect.Util;
 using QuantConnect.Orders;
 using QuantConnect.Brokerages.Binance.Extensions;
+using QuantConnect.Brokerages.Binance.Constants;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -139,7 +140,7 @@ namespace QuantConnect.Brokerages.Binance
             {
                 case OrderType.StopLimit:
                 case OrderType.StopMarket:
-                    return "algoOrder";
+                    return AlgoOrderEndpoints.Trade;
                 default:
                     return base.ResolveOrderEndpoint(orderType);
             }
