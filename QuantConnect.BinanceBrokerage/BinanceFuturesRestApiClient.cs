@@ -167,9 +167,9 @@ namespace QuantConnect.Brokerages.Binance
                 case StopLimitOrder:
                 case StopMarketOrder:
                     body.RenameKey("stopPrice", "triggerPrice");
+                    body["algoType"] = "CONDITIONAL";
                     break;
             }
-            body["algoType"] = "CONDITIONAL";
             return body;
         }
 
