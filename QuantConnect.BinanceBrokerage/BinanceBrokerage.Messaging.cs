@@ -57,23 +57,8 @@ namespace QuantConnect.Brokerages.Binance
                 }
 
                 var objData = obj;
-
-                var objEventType = objData["e"];
-                if (objEventType != null)
+                if (TryGetExecution(objData, out var execution))
                 {
-                    var eventType = objEventType.ToObject<string>();
-
-                    Execution execution = null;
-                    switch (eventType)
-                    {
-                        case "executionReport":
-                            execution = objData.ToObject<Execution>();
-                            break;
-                        case "ORDER_TRADE_UPDATE":
-                            execution = objData["o"].ToObject<Execution>();
-                            break;
-                    }
-
                     if (execution != null && (execution.ExecutionType.Equals("TRADE", StringComparison.OrdinalIgnoreCase)
                         || execution.ExecutionType.Equals("EXPIRED", StringComparison.OrdinalIgnoreCase)))
                     {
@@ -86,6 +71,26 @@ namespace QuantConnect.Brokerages.Binance
                 OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1, $"Parsing wss message failed. Data: {e.Message} Exception: {exception}"));
                 throw;
             }
+        }
+
+        internal static bool TryGetExecution(JObject objData, out Execution execution)
+        {
+            execution = null;
+            var objEventType = objData["e"];
+            if (objEventType != null)
+            {
+                var eventType = objEventType.ToObject<string>();
+                switch (eventType)
+                {
+                    case "executionReport":
+                        execution = objData.ToObject<Execution>();
+                        return true;
+                    case "ORDER_TRADE_UPDATE":
+                        execution = objData["o"].ToObject<Execution>();
+                        return true;
+                }
+            }
+            return false;
         }
 
         private void OnDataMessage(WebSocketMessage webSocketMessage)

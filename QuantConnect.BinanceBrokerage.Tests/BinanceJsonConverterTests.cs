@@ -13,10 +13,12 @@
  * limitations under the License.
 */
 
+using System;
 using Newtonsoft.Json;
 using NUnit.Framework;
-using QuantConnect.Brokerages.Binance.Messages;
+using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
+using QuantConnect.Brokerages.Binance.Messages;
 
 namespace QuantConnect.Brokerages.Binance.Tests
 {
@@ -273,6 +275,249 @@ namespace QuantConnect.Brokerages.Binance.Tests
             }
         }
 
+        private static IEnumerable<OrderResponse> OrderWebSocketMessages
+        {
+            get
+            {
+                yield return new OrderResponse(OrderType.FutureMarket, @"{
+    ""e"": ""ORDER_TRADE_UPDATE"",
+    ""T"": 1767884140553,
+    ""E"": 1767884140553,
+    ""o"": {
+        ""s"": ""ACHUSDT"",
+        ""c"": ""L7mGp1i08MTITjZk83hDih"",
+        ""S"": ""BUY"",
+        ""o"": ""MARKET"",
+        ""f"": ""GTC"",
+        ""q"": ""600"",
+        ""p"": ""0"",
+        ""ap"": ""0.009066"",
+        ""sp"": ""0"",
+        ""x"": ""TRADE"",
+        ""X"": ""FILLED"",
+        ""i"": 4759130004,
+        ""l"": ""600"",
+        ""z"": ""600"",
+        ""L"": ""0.009066"",
+        ""n"": ""0.0027198"",
+        ""N"": ""USDT"",
+        ""T"": 1767884140553,
+        ""t"": 247236558,
+        ""b"": ""0"",
+        ""a"": ""0"",
+        ""m"": false,
+        ""R"": false,
+        ""wt"": ""CONTRACT_PRICE"",
+        ""ot"": ""MARKET"",
+        ""ps"": ""BOTH"",
+        ""cp"": false,
+        ""rp"": ""0"",
+        ""pP"": false,
+        ""si"": 0,
+        ""ss"": 0,
+        ""V"": ""EXPIRE_MAKER"",
+        ""pm"": ""NONE"",
+        ""gtd"": 0,
+        ""er"": ""0""
+    }
+}", "4759130004");
+
+                yield return new OrderResponse(OrderType.SpotMarket, @"{
+    ""e"": ""executionReport"",
+    ""E"": 1767883925104,
+    ""s"": ""ACHUSDT"",
+    ""c"": ""vleXDHU2V2W89JArlx8F7X"",
+    ""S"": ""BUY"",
+    ""o"": ""MARKET"",
+    ""f"": ""GTC"",
+    ""q"": ""600.00000000"",
+    ""p"": ""0.00000000"",
+    ""P"": ""0.00000000"",
+    ""F"": ""0.00000000"",
+    ""g"": -1,
+    ""C"": """",
+    ""x"": ""TRADE"",
+    ""X"": ""FILLED"",
+    ""r"": ""NONE"",
+    ""i"": 1258777293,
+    ""l"": ""600.00000000"",
+    ""z"": ""600.00000000"",
+    ""L"": ""0.00905000"",
+    ""n"": ""0.60000000"",
+    ""N"": ""ACH"",
+    ""T"": 1767883925104,
+    ""t"": 63858276,
+    ""I"": 2576796861,
+    ""w"": false,
+    ""m"": false,
+    ""M"": true,
+    ""O"": 1767883925104,
+    ""Z"": ""5.43000000"",
+    ""Y"": ""5.43000000"",
+    ""Q"": ""0.00000000"",
+    ""W"": 1767883925104,
+    ""V"": ""EXPIRE_MAKER""
+}", "1258777293");
+
+                yield return new OrderResponse(OrderType.FutureLimit, @"{
+    ""e"": ""ORDER_TRADE_UPDATE"",
+    ""T"": 1767886244297,
+    ""E"": 1767886244298,
+    ""o"": {
+        ""s"": ""ACHUSDT"",
+        ""c"": ""8KQJhcz7Z9li4cM1Pei7YB"",
+        ""S"": ""BUY"",
+        ""o"": ""LIMIT"",
+        ""f"": ""GTC"",
+        ""q"": ""600"",
+        ""p"": ""0.00934"",
+        ""ap"": ""0.009336"",
+        ""sp"": ""0"",
+        ""x"": ""TRADE"",
+        ""X"": ""FILLED"",
+        ""i"": 4759268152,
+        ""l"": ""600"",
+        ""z"": ""600"",
+        ""L"": ""0.009336"",
+        ""n"": ""0.0028008"",
+        ""N"": ""USDT"",
+        ""T"": 1767886244297,
+        ""t"": 247245300,
+        ""b"": ""0"",
+        ""a"": ""0"",
+        ""m"": false,
+        ""R"": false,
+        ""wt"": ""CONTRACT_PRICE"",
+        ""ot"": ""LIMIT"",
+        ""ps"": ""BOTH"",
+        ""cp"": false,
+        ""rp"": ""0"",
+        ""pP"": false,
+        ""si"": 0,
+        ""ss"": 0,
+        ""V"": ""EXPIRE_MAKER"",
+        ""pm"": ""NONE"",
+        ""gtd"": 0,
+        ""er"": ""0""
+    }
+}", "4759268152");
+
+                yield return new OrderResponse(OrderType.FutureAlgoStopMarket, @"{
+    ""e"": ""ORDER_TRADE_UPDATE"",
+    ""T"": 1767887223537,
+    ""E"": 1767887223538,
+    ""o"": {
+        ""s"": ""ACHUSDT"",
+        ""c"": ""4TAmvfO43aunsU0Qzo95FS"",
+        ""S"": ""BUY"",
+        ""o"": ""MARKET"",
+        ""f"": ""GTC"",
+        ""q"": ""600"",
+        ""p"": ""0"",
+        ""ap"": ""0.00936"",
+        ""sp"": ""0"",
+        ""x"": ""TRADE"",
+        ""X"": ""FILLED"",
+        ""i"": 4759320317,
+        ""l"": ""600"",
+        ""z"": ""600"",
+        ""L"": ""0.00936"",
+        ""n"": ""0.002808"",
+        ""N"": ""USDT"",
+        ""T"": 1767887223537,
+        ""t"": 247248897,
+        ""b"": ""0"",
+        ""a"": ""0"",
+        ""m"": false,
+        ""R"": false,
+        ""wt"": ""CONTRACT_PRICE"",
+        ""ot"": ""MARKET"",
+        ""ps"": ""BOTH"",
+        ""cp"": false,
+        ""rp"": ""0"",
+        ""pP"": false,
+        ""si"": 2000000184830109,
+        ""ss"": -1,
+        ""st"": ""ALGO_CONDITION"",
+        ""V"": ""EXPIRE_MAKER"",
+        ""pm"": ""NONE"",
+        ""gtd"": 0,
+        ""er"": ""0""
+    }
+}", "4759320317");
+
+                yield return new OrderResponse(OrderType.FutureAlgoStopLimit, @"{
+    ""e"": ""ORDER_TRADE_UPDATE"",
+    ""T"": 1767888140311,
+    ""E"": 1767888140311,
+    ""o"": {
+        ""s"": ""ACHUSDT"",
+        ""c"": ""drH8UtUU3zDViGppOPVho3"",
+        ""S"": ""BUY"",
+        ""o"": ""LIMIT"",
+        ""f"": ""GTC"",
+        ""q"": ""600"",
+        ""p"": ""0.00943"",
+        ""ap"": ""0.00943"",
+        ""sp"": ""0"",
+        ""x"": ""TRADE"",
+        ""X"": ""FILLED"",
+        ""i"": 4759374544,
+        ""l"": ""600"",
+        ""z"": ""600"",
+        ""L"": ""0.00943"",
+        ""n"": ""0.0011316"",
+        ""N"": ""USDT"",
+        ""T"": 1767888140311,
+        ""t"": 247252518,
+        ""b"": ""0"",
+        ""a"": ""0"",
+        ""m"": true,
+        ""R"": false,
+        ""wt"": ""CONTRACT_PRICE"",
+        ""ot"": ""LIMIT"",
+        ""ps"": ""BOTH"",
+        ""cp"": false,
+        ""rp"": ""0"",
+        ""pP"": false,
+        ""si"": 2000000184902398,
+        ""ss"": -1,
+        ""st"": ""ALGO_CONDITION"",
+        ""V"": ""EXPIRE_MAKER"",
+        ""pm"": ""NONE"",
+        ""gtd"": 0,
+        ""er"": ""0""
+    }
+}", "4759374544");
+            }
+        }
+
+        [TestCaseSource(nameof(OrderWebSocketMessages))]
+        public void DeserializeWebSocketMessage(OrderResponse response)
+        {
+            var (_, message, expectedOrderId) = response;
+
+            var objData = JObject.Parse(message);
+
+            Assert.IsTrue(BinanceBrokerage.TryGetExecution(objData, out var execution));
+
+            Assert.IsTrue(execution.ExecutionType.Equals("TRADE", StringComparison.OrdinalIgnoreCase)
+                || execution.ExecutionType.Equals("EXPIRED", StringComparison.OrdinalIgnoreCase));
+
+            Assert.IsFalse(string.IsNullOrEmpty(execution.OrderId));
+            Assert.AreEqual(expectedOrderId, execution.OrderId);
+
+            Assert.Greater(execution.LastExecutedPrice, 0);
+            Assert.IsTrue(execution.Direction 
+                is Orders.OrderDirection.Buy or Orders.OrderDirection.Sell);
+            Assert.Greater(execution.LastExecutedQuantity, 0);
+            Assert.Greater(execution.TransactionTime, 0);
+            Assert.IsFalse(string.IsNullOrEmpty(execution.FeeCurrency));
+            Assert.Greater(execution.Fee, 0);
+            Assert.IsFalse(string.IsNullOrEmpty(execution.OrderStatus));
+        }
+
+
         public record OrderResponse(OrderType OrderType, string Json, string ExpectedOrderId)
         {
             public override string ToString() => OrderType.ToString();
@@ -283,6 +528,8 @@ namespace QuantConnect.Brokerages.Binance.Tests
             SpotStopLimit,
             SpotLimit,
             SpotMarket,
+            FutureMarket,
+            FutureLimit,
             FutureAlgoStopLimit,
             FutureAlgoStopMarket
         }
