@@ -44,6 +44,15 @@ namespace QuantConnect.Brokerages.Binance
         /// </summary>
         private const string _prefixV2 = "/fapi/v2";
 
+        /// <summary>
+        /// Order types that require algorithmic order handling.
+        /// </summary>
+        private static readonly HashSet<OrderType> _algoOrderTypes =
+        [
+            OrderType.StopLimit,
+            OrderType.StopMarket
+        ];
+
         protected override JsonConverter CreateAccountConverter() => new FuturesAccountConverter();
 
         /// <summary>
@@ -98,7 +107,7 @@ namespace QuantConnect.Brokerages.Binance
         /// Gets all orders not yet closed
         /// </summary>
         /// <returns>All open orders</returns>
-        public override IEnumerable<Messages.Order> GetOpenOrders()
+        public override IEnumerable<Messages.OpenOrder> GetOpenOrders()
         {
             return base.GetOpenOrders().Concat(GetOpenOrders(AlgoOrderEndpoints.OpenOrders));
         }
@@ -145,14 +154,9 @@ namespace QuantConnect.Brokerages.Binance
         /// </returns>
         protected override string ResolveOrderEndpoint(OrderType orderType)
         {
-            switch (orderType)
-            {
-                case OrderType.StopLimit:
-                case OrderType.StopMarket:
-                    return AlgoOrderEndpoints.Trade;
-                default:
-                    return base.ResolveOrderEndpoint(orderType);
-            }
+            return IsAlgoOrder(orderType)
+                ? AlgoOrderEndpoints.Trade
+                : base.ResolveOrderEndpoint(orderType);
         }
 
         /// <summary>
@@ -162,14 +166,14 @@ namespace QuantConnect.Brokerages.Binance
         protected override IDictionary<string, object> CreateOrderBody(Orders.Order order)
         {
             var body = base.CreateOrderBody(order);
-            switch (order)
+
+            if (IsAlgoOrder(order.Type))
             {
-                case StopLimitOrder:
-                case StopMarketOrder:
-                    body.RenameKey("stopPrice", "triggerPrice");
-                    body["algoType"] = "CONDITIONAL";
-                    break;
+                body.RenameKey("stopPrice", "triggerPrice");
+                body["algoType"] = "CONDITIONAL";
+                return body;
             }
+
             return body;
         }
 
@@ -179,7 +183,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <param name="order">Lean order</param>
         protected override IEnumerable<IDictionary<string, object>> CreateCancelOrderBody(Orders.Order order)
         {
-            if (order.Type is OrderType.StopLimit or OrderType.StopMarket)
+            if (IsAlgoOrder(order.Type))
             {
                 foreach (var id in order.BrokerId)
                 {
@@ -196,6 +200,14 @@ namespace QuantConnect.Brokerages.Binance
                     yield return baseBody;
                 }
             }
+        }
+
+        /// <summary>
+        /// Determines whether the specified order type is algorithmic.
+        /// </summary>
+        private static bool IsAlgoOrder(OrderType type)
+        {
+            return _algoOrderTypes.Contains(type);
         }
     }
 }
