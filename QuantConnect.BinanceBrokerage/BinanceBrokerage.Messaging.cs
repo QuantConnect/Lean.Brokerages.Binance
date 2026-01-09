@@ -235,6 +235,11 @@ namespace QuantConnect.Brokerages.Binance
 
         private Orders.Order GetLeanOrder(string brokerageOrderId)
         {
+            // Binance may send "0" as the order id for algo orders
+            if (string.IsNullOrEmpty(brokerageOrderId) || brokerageOrderId.Equals("0", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return null;
+            }
             return _algorithm.Transactions.GetOrdersByBrokerageId(brokerageOrderId)?.SingleOrDefault();
         }
     }
