@@ -13,39 +13,65 @@
  * limitations under the License.
 */
 
-using Newtonsoft.Json;
 using System;
+using Newtonsoft.Json;
+using QuantConnect.Brokerages.Binance.Converters;
 
 namespace QuantConnect.Brokerages.Binance.Messages
 {
 #pragma warning disable 1591
-    public class Order
+    public abstract class Order
     {
         [JsonProperty("orderId")]
-        public string Id { get; set; }
+        public virtual string Id { get; set; }
         public string Symbol { get; set; }
         public decimal Price { get; set; }
-        public decimal StopPrice { get; set; }
+        public virtual decimal StopPrice { get; set; }
         [JsonProperty("origQty")]
-        public decimal OriginalAmount { get; set; }
+        public virtual decimal OriginalAmount { get; set; }
         [JsonProperty("executedQty")]
         public decimal ExecutedAmount { get; set; }
-        public string Status { get; set; }
-        public string Type { get; set; }
+        public virtual string Status { get; set; }
+        public virtual string Type { get; set; }
         public string Side { get; set; }
+
+        public virtual long Time { get; set; }
 
         public decimal Quantity => string.Equals(Side, "buy", StringComparison.OrdinalIgnoreCase) ? OriginalAmount : -OriginalAmount;
     }
 
+    [JsonConverter(typeof(OpenOrderResponseConverter))]
     public class OpenOrder : Order
     {
-        public long Time { get; set; }
+
     }
 
-    public class NewOrder : Order
+    [JsonConverter(typeof(NewOrderResponseConverter))]
+    public class NewOrder : OpenOrder
     {
         [JsonProperty("transactTime")]
-        public long TransactionTime { get; set; }
+        public override long Time { get; set; }
+    }
+
+    public class AlgoOrder : NewOrder
+    {
+        [JsonProperty("algoId")]
+        public override string Id { get; set; }
+
+        [JsonProperty("createTime")]
+        public override long Time { get; set; }
+
+        [JsonProperty("triggerPrice")]
+        public override decimal StopPrice { get; set; }
+
+        [JsonProperty("orderType")]
+        public override string Type { get; set; }
+
+        [JsonProperty("quantity")]
+        public override decimal OriginalAmount { get; set; }
+
+        [JsonProperty("algoStatus")]
+        public override string Status { get; set; }
     }
 #pragma warning restore 1591
 }

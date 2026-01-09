@@ -8,5 +8,7 @@
   "binance-fwebsocket-url": "wss://fstream.binance.com/ws",
 
   "binance-dapi-url": "https://dapi.binance.com",
-  "binance-dwebsocket-url": "wss://dstream.binance.com/ws"
+  "binance-dwebsocket-url": "wss://dstream.binance.com/ws",
+
+  "debug-mode": false
 }

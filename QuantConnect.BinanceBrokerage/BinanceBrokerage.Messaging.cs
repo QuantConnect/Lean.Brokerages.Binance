@@ -57,23 +57,8 @@ namespace QuantConnect.Brokerages.Binance
                 }
 
                 var objData = obj;
-
-                var objEventType = objData["e"];
-                if (objEventType != null)
+                if (TryGetExecution(objData, out var execution))
                 {
-                    var eventType = objEventType.ToObject<string>();
-
-                    Execution execution = null;
-                    switch (eventType)
-                    {
-                        case "executionReport":
-                            execution = objData.ToObject<Execution>();
-                            break;
-                        case "ORDER_TRADE_UPDATE":
-                            execution = objData["o"].ToObject<Execution>();
-                            break;
-                    }
-
                     if (execution != null && (execution.ExecutionType.Equals("TRADE", StringComparison.OrdinalIgnoreCase)
                         || execution.ExecutionType.Equals("EXPIRED", StringComparison.OrdinalIgnoreCase)))
                     {
@@ -86,6 +71,26 @@ namespace QuantConnect.Brokerages.Binance
                 OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1, $"Parsing wss message failed. Data: {e.Message} Exception: {exception}"));
                 throw;
             }
+        }
+
+        internal static bool TryGetExecution(JObject objData, out Execution execution)
+        {
+            execution = null;
+            var objEventType = objData["e"];
+            if (objEventType != null)
+            {
+                var eventType = objEventType.ToObject<string>();
+                switch (eventType)
+                {
+                    case "executionReport":
+                        execution = objData.ToObject<Execution>();
+                        return true;
+                    case "ORDER_TRADE_UPDATE":
+                        execution = objData["o"].ToObject<Execution>();
+                        return true;
+                }
+            }
+            return false;
         }
 
         private void OnDataMessage(WebSocketMessage webSocketMessage)
@@ -194,11 +199,11 @@ namespace QuantConnect.Brokerages.Binance
         {
             try
             {
-                var order = _algorithm.Transactions.GetOrdersByBrokerageId(data.OrderId)?.SingleOrDefault();
+                var order = GetLeanOrder(data.AlgoOrderId) ?? GetLeanOrder(data.OrderId);
                 if (order == null)
                 {
                     // not our order, nothing else to do here
-                    Log.Error($"BinanceBrokerage.OnFillOrder(): order not found: {data.OrderId}");
+                    Log.Error($"BinanceBrokerage.OnFillOrder(): order not found: {data.OrderId}[AlgoOrderId: {data.AlgoOrderId}");
                     return;
                 }
 
@@ -226,6 +231,16 @@ namespace QuantConnect.Brokerages.Binance
                 Log.Error(e);
                 throw;
             }
+        }
+
+        private Orders.Order GetLeanOrder(string brokerageOrderId)
+        {
+            // Binance may send "0" as the order id for algo orders
+            if (string.IsNullOrEmpty(brokerageOrderId) || brokerageOrderId.Equals("0", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return null;
+            }
+            return _algorithm.Transactions.GetOrdersByBrokerageId(brokerageOrderId)?.SingleOrDefault();
         }
     }
 }

@@ -37,6 +37,9 @@ using QuantConnect.Api;
 using RestSharp;
 using Timer = System.Timers.Timer;
 using QuantConnect.Brokerages.Binance.Constants;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("QuantConnect.Brokerages.Binance.Tests")]
 
 namespace QuantConnect.Brokerages.Binance
 {

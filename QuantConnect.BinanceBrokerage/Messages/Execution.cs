@@ -28,6 +28,15 @@ namespace QuantConnect.Brokerages.Binance.Messages
         [JsonProperty("i")]
         public string OrderId { get; set; }
 
+        /// <summary>
+        /// Strategy (algorithm) order identifier.
+        /// </summary>
+        /// <remarks>
+        /// The field may be absent or default to <c>0</c> in the response.
+        /// </remarks>
+        [JsonProperty("si")]
+        public string AlgoOrderId { get; set; }
+
         [JsonProperty("t")]
         public string TradeId { get; set; }
 

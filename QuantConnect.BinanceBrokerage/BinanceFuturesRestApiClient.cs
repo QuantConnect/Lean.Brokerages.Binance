@@ -23,6 +23,9 @@ using System.Net;
 using System;
 using System.Linq;
 using QuantConnect.Util;
+using QuantConnect.Orders;
+using QuantConnect.Brokerages.Binance.Extensions;
+using QuantConnect.Brokerages.Binance.Constants;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -40,6 +43,15 @@ namespace QuantConnect.Brokerages.Binance
         /// The API endpoint prefix for Binance Futures API version 2.
         /// </summary>
         private const string _prefixV2 = "/fapi/v2";
+
+        /// <summary>
+        /// Order types that require algorithmic order handling.
+        /// </summary>
+        private static readonly HashSet<OrderType> _algoOrderTypes =
+        [
+            OrderType.StopLimit,
+            OrderType.StopMarket
+        ];
 
         protected override JsonConverter CreateAccountConverter() => new FuturesAccountConverter();
 
@@ -92,6 +104,15 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
+        /// Gets all orders not yet closed
+        /// </summary>
+        /// <returns>All open orders</returns>
+        public override IEnumerable<Messages.OpenOrder> GetOpenOrders()
+        {
+            return base.GetOpenOrders().Concat(GetOpenOrders(AlgoOrderEndpoints.OpenOrders));
+        }
+
+        /// <summary>
         /// Retrieves the current account holdings for a specified API prefix from the Binance brokerage.
         /// </summary>
         /// <param name="apiPrefix">
@@ -121,6 +142,76 @@ namespace QuantConnect.Brokerages.Binance
                     Quantity = x.PositionAmt,
                 })
                 .ToList();
+        }
+
+        /// <summary>
+        /// Resolves the REST endpoint used to place an order, selecting
+        /// the algorithmic order endpoint when required.
+        /// </summary>
+        /// <param name="orderType">The type of order being placed.</param>
+        /// <returns>
+        /// The endpoint path used for placing the order.
+        /// </returns>
+        protected override string ResolveOrderEndpoint(OrderType orderType)
+        {
+            return IsAlgoOrder(orderType)
+                ? AlgoOrderEndpoints.Trade
+                : base.ResolveOrderEndpoint(orderType);
+        }
+
+        /// <summary>
+        /// Create account new order body payload
+        /// </summary>
+        /// <param name="order">Lean order</param>
+        protected override IDictionary<string, object> CreateOrderBody(Orders.Order order)
+        {
+            var body = base.CreateOrderBody(order);
+
+            if (IsAlgoOrder(order.Type))
+            {
+                body.RenameKey("stopPrice", "triggerPrice");
+                body["algoType"] = "CONDITIONAL";
+                return body;
+            }
+
+            return body;
+        }
+
+        /// <summary>
+        /// Create account cancel order body payload
+        /// </summary>
+        /// <param name="order">Lean order</param>
+        protected override IEnumerable<IDictionary<string, object>> CreateCancelOrderBody(Orders.Order order)
+        {
+            if (IsAlgoOrder(order.Type))
+            {
+                return CreateAlgoCancelOrderBody(order.BrokerId);
+            }
+
+            return base.CreateCancelOrderBody(order);
+        }
+
+        /// <summary>
+        /// Creates cancel request payloads for orders.
+        /// </summary>
+        /// <param name="brokerageIds">The brokerage order identifiers.</param>
+        private static IEnumerable<IDictionary<string, object>> CreateAlgoCancelOrderBody(List<string> brokerageIds)
+        {
+            foreach (var id in brokerageIds)
+            {
+                yield return new Dictionary<string, object>
+                {
+                    ["algoId"] = id
+                };
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified order type is algorithmic.
+        /// </summary>
+        private static bool IsAlgoOrder(OrderType type)
+        {
+            return _algoOrderTypes.Contains(type);
         }
     }
 }
