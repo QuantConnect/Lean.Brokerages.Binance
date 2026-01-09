@@ -185,20 +185,24 @@ namespace QuantConnect.Brokerages.Binance
         {
             if (IsAlgoOrder(order.Type))
             {
-                foreach (var id in order.BrokerId)
-                {
-                    yield return new Dictionary<string, object>
-                    {
-                        ["algoId"] = id
-                    };
-                }
+                return CreateAlgoCancelOrderBody(order.BrokerId);
             }
-            else
+
+            return base.CreateCancelOrderBody(order);
+        }
+
+        /// <summary>
+        /// Creates cancel request payloads for orders.
+        /// </summary>
+        /// <param name="brokerageIds">The brokerage order identifiers.</param>
+        private static IEnumerable<IDictionary<string, object>> CreateAlgoCancelOrderBody(List<string> brokerageIds)
+        {
+            foreach (var id in brokerageIds)
             {
-                foreach (var baseBody in base.CreateCancelOrderBody(order))
+                yield return new Dictionary<string, object>
                 {
-                    yield return baseBody;
-                }
+                    ["algoId"] = id
+                };
             }
         }
 
