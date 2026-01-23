@@ -90,6 +90,11 @@ namespace QuantConnect.Brokerages.Binance
         protected virtual string TradeChannelName { get; } = TradeChannels.SpotTradeChannelName;
 
         /// <summary>
+        /// Enables or disables concurrent processing of messages to and from the brokerage.
+        /// </summary>
+        public override bool ConcurrencyEnabled => true;
+
+        /// <summary>
         /// Parameterless constructor for brokerage
         /// </summary>
         public BinanceBrokerage() : this(Market.Binance)
@@ -543,13 +548,13 @@ namespace QuantConnect.Brokerages.Binance
 
             ValidateSubscription();
 
-            _webApiRateLimiter = GetRateLimiter(job is null ? DeploymentTarget.LocalPlatform : job.DeploymentTarget);
+            _webApiRateLimiter = GetRateLimiter(job?.DeploymentTarget ?? DeploymentTarget.LocalPlatform);
             base.Initialize(wssUrl, new WebSocketClientWrapper(), httpClient: null, apiKey, apiSecret);
             _job = job;
             _algorithm = algorithm;
             _aggregator = aggregator;
             _webSocketBaseUrl = wssUrl;
-            _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage);
+            _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage, ConcurrencyEnabled);
             _symbolMapper = new(marketName);
             MarketName = marketName;
 
