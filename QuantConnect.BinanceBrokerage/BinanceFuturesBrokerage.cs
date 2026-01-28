@@ -89,8 +89,9 @@ namespace QuantConnect.Brokerages.Binance
             }
             CurrencyPairUtil.DecomposeCurrencyPair(symbol, out var _, out var quoteCurrency);
 
-            return quoteCurrency.Equals("USDT", System.StringComparison.InvariantCultureIgnoreCase)
-                || quoteCurrency.Equals("BUSD", System.StringComparison.InvariantCultureIgnoreCase);
+            return quoteCurrency.Equals("USDT", StringComparison.InvariantCultureIgnoreCase)
+                || quoteCurrency.Equals("BUSD", StringComparison.InvariantCultureIgnoreCase)
+                || quoteCurrency.Equals("USDC", StringComparison.InvariantCultureIgnoreCase);
         }
 
         /// <summary>

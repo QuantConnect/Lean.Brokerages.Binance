@@ -100,7 +100,12 @@ namespace QuantConnect.Brokerages.Binance
 
         public override BalanceEntry[] GetCashBalance()
         {
-            return GetCashBalance(_prefixV2);
+            var balances = GetCashBalance(_prefixV2) ?? [];
+            if (!balances.Any(x => x.Asset.Equals("BNFCR", StringComparison.InvariantCultureIgnoreCase)))
+            {
+                balances = balances.Concat([new FutureBalance() { Asset = "BNFCR", WalletBalance = 0 }]).ToArray();
+            }
+            return balances;
         }
 
         /// <summary>
