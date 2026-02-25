@@ -26,18 +26,18 @@ namespace QuantConnect.Brokerages.Binance
 
         public override void CreateListenKey()
         {
-            // Not used for global spot, as the listen key is created via WebSocket connection
+            // Not used for global (cash/margin) spot 
         }
 
         public override bool SessionKeepAlive()
         {
-            // Not used for global spot, as the listen key is kept alive via WebSocket connection
+            // Not used for global (cash/margin) spot
             return true;
         }
 
         public override void StopSession()
         {
-            // Not used for global spot, as the listen key is stopped via WebSocket connection
+            // Not used for global (cash/margin) spot
         }
     }
 }

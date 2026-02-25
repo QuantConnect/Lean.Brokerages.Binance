@@ -41,7 +41,5 @@ namespace QuantConnect.Brokerages.Binance.Messages
                 timestamp
             };
         }
-
-
     }
 }
