@@ -73,6 +73,12 @@ namespace QuantConnect.Brokerages.Binance
 
         private const int MaximumSymbolsPerConnection = 512;
 
+        /// <summary>
+        /// Indicates whether the WebSocket connection uses the WS-API endpoint 
+        /// that does not require a listen key (v3 API).
+        /// </summary>
+        private bool _isWsApiEndpointWithoutListenKey;
+
         protected BinanceBaseRestApiClient ApiClient => _apiClientLazy?.Value;
         protected string MarketName { get; set; }
 
@@ -116,11 +122,12 @@ namespace QuantConnect.Brokerages.Binance
         /// <param name="apiSecret">api secret</param>
         /// <param name="restApiUrl">The rest api url</param>
         /// <param name="webSocketBaseUrl">The web socket base url</param>
+        /// <param name="orderWebSocketBaseUrl">The order web socket base url</param>
         /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
         /// <param name="aggregator">the aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
-        public BinanceBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl, IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job)
-            : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, algorithm, aggregator, job, Market.Binance)
+        public BinanceBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl, string orderWebSocketBaseUrl, IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job)
+            : this(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, orderWebSocketBaseUrl, algorithm, aggregator, job, Market.Binance)
         {
         }
 
@@ -131,15 +138,17 @@ namespace QuantConnect.Brokerages.Binance
         /// <param name="apiSecret">api secret</param>
         /// <param name="restApiUrl">The rest api url</param>
         /// <param name="webSocketBaseUrl">The web socket base url</param>
+        /// <param name="orderWebSocketBaseUrl">The order web socket base url</param>
         /// <param name="algorithm">the algorithm instance is required to retrieve account type</param>
         /// <param name="aggregator">the aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
         /// <param name="marketName">Actual market name</param>
-        public BinanceBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl, IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job, string marketName)
+        public BinanceBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl, string orderWebSocketBaseUrl, IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job, string marketName)
             : base(marketName)
         {
             Initialize(
                 webSocketBaseUrl,
+                orderWebSocketBaseUrl,
                 restApiUrl,
                 apiKey,
                 apiSecret,
@@ -435,7 +444,8 @@ namespace QuantConnect.Brokerages.Binance
         protected virtual void SetJobInit(LiveNodePacket job, IDataAggregator aggregator)
         {
             Initialize(
-                wssUrl: job.BrokerageData["binance-websocket-url"],
+                dataWsUrl: job.BrokerageData["binance-websocket-url"],
+                orderWsUrl: null,
                 restApiUrl: job.BrokerageData["binance-api-url"],
                 apiKey: job.BrokerageData["binance-api-key"],
                 apiSecret: job.BrokerageData["binance-api-secret"],
@@ -526,7 +536,8 @@ namespace QuantConnect.Brokerages.Binance
         /// <summary>
         /// Initialize the instance of this class
         /// </summary>
-        /// <param name="wssUrl">The web socket base url</param>
+        /// <param name="dataWsUrl">The web socket base url</param>
+        /// <param name="orderWsUrl">The order web socket base url</param>
         /// <param name="restApiUrl">The rest api url</param>
         /// <param name="apiKey">api key</param>
         /// <param name="apiSecret">api secret</param>
@@ -534,7 +545,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <param name="aggregator">the aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
         /// <param name="marketName">market name</param>
-        protected void Initialize(string wssUrl, string restApiUrl, string apiKey, string apiSecret,
+        protected void Initialize(string dataWsUrl, string orderWsUrl, string restApiUrl, string apiKey, string apiSecret,
             IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job, string marketName)
         {
             if (IsInitialized)
@@ -549,11 +560,12 @@ namespace QuantConnect.Brokerages.Binance
             ValidateSubscription();
 
             _webApiRateLimiter = GetRateLimiter(job?.DeploymentTarget ?? DeploymentTarget.LocalPlatform);
-            base.Initialize(wssUrl, new WebSocketClientWrapper(), httpClient: null, apiKey, apiSecret);
+            base.Initialize(orderWsUrl, new WebSocketClientWrapper(), httpClient: null, apiKey, apiSecret);
             _job = job;
             _algorithm = algorithm;
             _aggregator = aggregator;
-            _webSocketBaseUrl = wssUrl;
+            _webSocketBaseUrl = orderWsUrl;
+            _isWsApiEndpointWithoutListenKey = !string.IsNullOrEmpty(orderWsUrl) && !dataWsUrl.Equals(orderWsUrl, StringComparison.OrdinalIgnoreCase);
             _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage, ConcurrencyEnabled);
             _symbolMapper = new(marketName);
             MarketName = marketName;
@@ -562,7 +574,7 @@ namespace QuantConnect.Brokerages.Binance
             var symbolWeights = maximumWebSocketConnections > 0 ? FetchSymbolWeights(restApiUrl) : null;
 
             var subscriptionManager = new BrokerageMultiWebSocketSubscriptionManager(
-                wssUrl,
+                dataWsUrl,
                 MaximumSymbolsPerConnection,
                 maximumWebSocketConnections,
                 symbolWeights,
@@ -589,8 +601,11 @@ namespace QuantConnect.Brokerages.Binance
                     apiClient.Message += (s, e) => OnMessage(e);
 
                     // once we know the api endpoint we can subscribe to user data stream
-                    apiClient.CreateListenKey();
-                    _keepAliveTimer.Elapsed += (s, e) => apiClient.SessionKeepAlive();
+                    if (!_isWsApiEndpointWithoutListenKey)
+                    {
+                        apiClient.CreateListenKey();
+                        _keepAliveTimer.Elapsed += (s, e) => apiClient.SessionKeepAlive();
+                    }
 
                     Connect(apiClient.SessionId);
 
@@ -609,6 +624,10 @@ namespace QuantConnect.Brokerages.Binance
             WebSocket.Open += (s, e) =>
             {
                 _keepAliveTimer.Start();
+                if (_isWsApiEndpointWithoutListenKey)
+                {
+                    WebSocket.Send(new Messages.SubscribeSignature(ApiKey, ApiSecret).ToJson());
+                }
             };
             WebSocket.Closed += (s, e) =>
             {
@@ -617,7 +636,7 @@ namespace QuantConnect.Brokerages.Binance
             };
 
             // A single connection to stream.binance.com is only valid for 24 hours; expect to be disconnected at the 24 hour mark
-            // Source: https://github.com/binance-exchange/binance-official-api-docs/blob/master/web-socket-streams.md#general-wss-information
+            // Source: https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md#general-wss-information
             _reconnectTimer = new Timer
             {
                 // 23.5 hours
@@ -640,10 +659,13 @@ namespace QuantConnect.Brokerages.Binance
             string restApiUrl, string apiKey, string apiSecret, RateGate rateGate)
         {
             restApiUrl ??= Config.Get("binance-api-url", "https://api.binance.com");
-            return (_algorithm == null || _algorithm.BrokerageModel.AccountType == AccountType.Cash)
-                 ? new BinanceSpotRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate)
-                 : new BinanceCrossMarginRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret,
-                     restApiUrl, rateGate);
+            if (_algorithm?.BrokerageModel.AccountType == AccountType.Margin)
+            {
+                return new BinanceCrossMarginRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate);
+            }
+            return MarketName == Market.BinanceUS
+                ? new BinanceSpotRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate)
+                : new BinanceGlobalSpotRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate);
         }
 
         /// <summary>
@@ -777,7 +799,10 @@ namespace QuantConnect.Brokerages.Binance
             Log.Trace("BinanceBrokerage.Connect(): Connecting...");
 
             _reconnectTimer.Start();
-            WebSocket.Initialize($"{_webSocketBaseUrl}/{sessionId}");
+
+            var url = _isWsApiEndpointWithoutListenKey ? _webSocketBaseUrl : $"{_webSocketBaseUrl}/{sessionId}";
+            WebSocket.Initialize(url);
+
             ConnectSync();
         }
 

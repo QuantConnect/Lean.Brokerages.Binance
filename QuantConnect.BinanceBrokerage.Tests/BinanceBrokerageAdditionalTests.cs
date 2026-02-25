@@ -99,12 +99,14 @@ namespace QuantConnect.Brokerages.Binance.Tests
             var apiSecret = Config.Get("binance-api-secret");
             var apiUrl = Config.Get("binance-api-url", "https://api.binance.com");
             var websocketUrl = Config.Get("binance-websocket-url", "wss://stream.binance.com:9443/ws");
+            var orderWebsocketUrl = Config.Get("binance-orders-websocket-url", "wss://ws-api.binance.com:9443/ws-api/v3");
 
             return new BinanceBrokerage(
                 apiKey,
                 apiSecret,
                 apiUrl,
                 websocketUrl,
+                orderWebsocketUrl,
                 algorithm,
                 new AggregationManager(),
                 null

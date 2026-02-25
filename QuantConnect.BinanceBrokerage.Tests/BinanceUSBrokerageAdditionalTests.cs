@@ -33,7 +33,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
             var apiUrl = Config.Get("binanceus-api-url", "https://api.binance.us");
             var websocketUrl = Config.Get("binanceus-websocket-url", "wss://stream.binance.us:9443/ws");
 
-            return new BinanceBrokerage(
+            return new BinanceUSBrokerage(
                 apiKey,
                 apiSecret,
                 apiUrl,

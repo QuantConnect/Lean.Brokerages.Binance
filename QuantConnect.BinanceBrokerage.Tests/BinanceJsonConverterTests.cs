@@ -547,5 +547,35 @@ namespace QuantConnect.Brokerages.Binance.Tests
             FutureAlgoStopLimit,
             FutureAlgoStopMarket
         }
+
+        [Test]
+        public void SerializeSubscribeSignatureRequestShouldContainCorrectCamelCaseFields()
+        {
+            var apiKey = "123";
+            var apiSecret = "456";
+
+            var request = new SubscribeSignature(apiKey, apiSecret);
+
+            var json = request.ToJson();
+
+            Assert.IsNotEmpty(json, "Serialized JSON should not be empty.");
+
+            var obj = JObject.Parse(json);
+
+            Assert.IsTrue(Guid.TryParse(obj.Value<string>("id"), out _), "'id' should be a valid GUID.");
+            Assert.AreEqual("userDataStream.subscribe.signature", obj.Value<string>("method"), "'method' field is incorrect.");
+
+            var @params = obj["params"] as JObject;
+
+            var expectedKeys = new[] { "apiKey", "signature", "timestamp" };
+            foreach (var key in expectedKeys)
+            {
+                Assert.IsTrue(@params.ContainsKey(key), $"Param '{key}' is missing or not camelCase.");
+            }
+
+            Assert.AreEqual(apiKey, @params.Value<string>("apiKey"), "'apiKey' value is incorrect.");
+            Assert.IsFalse(string.IsNullOrEmpty(@params.Value<string>("signature")), "'signature' value is incorrect.");
+            Assert.AreNotEqual(0, @params.Value<long>("timestamp"), "'timestamp' value is incorrect.");
+        }
     }
 }

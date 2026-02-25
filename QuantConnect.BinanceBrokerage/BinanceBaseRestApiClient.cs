@@ -15,6 +15,7 @@
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using QuantConnect.Brokerages.Binance.Extensions;
 using QuantConnect.Brokerages.Binance.Messages;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
@@ -468,7 +469,7 @@ namespace QuantConnect.Brokerages.Binance
         /// Check User Data stream listen key is alive
         /// </summary>
         /// <returns></returns>
-        public bool SessionKeepAlive()
+        public virtual bool SessionKeepAlive()
         {
             if (string.IsNullOrEmpty(SessionId))
             {
@@ -490,7 +491,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <summary>
         /// Stops the session
         /// </summary>
-        public void StopSession()
+        public virtual void StopSession()
         {
             if (!string.IsNullOrEmpty(SessionId))
             {
@@ -528,7 +529,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <summary>
         /// Start user data stream
         /// </summary>
-        public void CreateListenKey()
+        public virtual void CreateListenKey()
         {
             var request = new RestRequest(UserDataStreamEndpoint, Method.POST);
             request.AddHeader(KeyHeader, ApiKey);
@@ -660,7 +661,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <returns></returns>
         protected long GetNonce()
         {
-            return (long)Time.DateTimeToUnixTimeStampMilliseconds(DateTime.UtcNow);
+            return BinanceExtensions.GetNonce();
         }
 
         /// <summary>
@@ -670,10 +671,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <returns>a token representing the request params</returns>
         protected string AuthenticationToken(string payload)
         {
-            using (HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(ApiSecret)))
-            {
-                return hmac.ComputeHash(Encoding.UTF8.GetBytes(payload)).ToHexString();
-            }
+            return BinanceExtensions.GetAuthenticationToken(ApiSecret, payload);
         }
 
         private static string ConvertOrderDirection(OrderDirection orderDirection)

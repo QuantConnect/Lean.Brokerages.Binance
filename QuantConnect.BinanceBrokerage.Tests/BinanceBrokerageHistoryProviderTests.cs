@@ -141,6 +141,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 apiUrl,
                 websocketUrl,
                 null,
+                null,
                 new AggregationManager(),
                 null
             );
