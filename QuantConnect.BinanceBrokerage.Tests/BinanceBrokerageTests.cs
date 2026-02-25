@@ -85,7 +85,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
             var apiUrl = Config.Get("binance-api-url", "https://api.binance.com");
             var websocketUrl = Config.Get("binance-websocket-url", "wss://stream.binance.com:9443/ws");
 
-            _binanceApi = new BinanceSpotRestApiClient(
+            _binanceApi = new BinanceGlobalSpotRestApiClient(
                 SymbolMapper,
                 algorithm.Object?.Portfolio,
                 apiKey,
@@ -93,7 +93,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 apiUrl,
                 ApiRateGate);
 
-            return new BinanceBrokerage(
+            return new BinanceGlobalBrokerage(
                     apiKey,
                     apiSecret,
                     apiUrl,

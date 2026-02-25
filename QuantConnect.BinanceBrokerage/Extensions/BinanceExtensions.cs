@@ -13,7 +13,10 @@
  * limitations under the License.
 */
 
+using System;
+using System.Text;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 
 namespace QuantConnect.Brokerages.Binance.Extensions;
 
@@ -29,5 +32,29 @@ public static class BinanceExtensions
     {
         dictionary[toKey] = dictionary[fromKey];
         dictionary.Remove(fromKey);
+    }
+
+
+    /// <summary>
+    /// Timestamp in milliseconds
+    /// </summary>
+    /// <returns></returns>
+    public static long GetNonce()
+    {
+        return (long)Time.DateTimeToUnixTimeStampMilliseconds(DateTime.UtcNow);
+    }
+
+    /// <summary>
+    /// Creates a signature for signed endpoints
+    /// </summary>
+    /// <param name="apiSecret">the api secret key for the request</param>
+    /// <param name="payload">the body of the request</param>
+    /// <returns>a token representing the request params</returns>
+    public static string GetAuthenticationToken(string apiSecret, string payload)
+    {
+        using (HMACSHA256 hmac = new(Encoding.UTF8.GetBytes(apiSecret)))
+        {
+            return hmac.ComputeHash(Encoding.UTF8.GetBytes(payload)).ToHexString();
+        }
     }
 }

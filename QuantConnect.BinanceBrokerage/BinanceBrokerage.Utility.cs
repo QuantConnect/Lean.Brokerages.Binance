@@ -20,7 +20,7 @@ namespace QuantConnect.Brokerages.Binance
     /// <summary>
     /// Binance utility methods
     /// </summary>
-    public partial class BinanceBrokerage
+    public abstract partial class BinanceBrokerage
     {
         private static OrderStatus ConvertOrderStatus(string raw)
         {

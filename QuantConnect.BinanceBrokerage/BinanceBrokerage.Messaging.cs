@@ -26,7 +26,7 @@ using System.Linq;
 
 namespace QuantConnect.Brokerages.Binance
 {
-    public partial class BinanceBrokerage
+    public abstract partial class BinanceBrokerage
     {
         private IDataAggregator _aggregator;
 

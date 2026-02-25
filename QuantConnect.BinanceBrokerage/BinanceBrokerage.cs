@@ -46,8 +46,7 @@ namespace QuantConnect.Brokerages.Binance
     /// <summary>
     /// Binance brokerage implementation
     /// </summary>
-    [BrokerageFactory(typeof(BinanceBrokerageFactory))]
-    public partial class BinanceBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
+    public abstract partial class BinanceBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     {
         private IAlgorithm _algorithm;
         private SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
@@ -59,9 +58,9 @@ namespace QuantConnect.Brokerages.Binance
         private long _lastRequestId;
 
         private LiveNodePacket _job;
-        private string _webSocketBaseUrl;
+        private protected string _webSocketBaseUrl;
         private Timer _keepAliveTimer;
-        private Timer _reconnectTimer;
+        private protected Timer _reconnectTimer;
         private Lazy<BinanceBaseRestApiClient> _apiClientLazy;
 
         private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
@@ -606,10 +605,7 @@ namespace QuantConnect.Brokerages.Binance
                 Interval = 30 * 60 * 1000
             };
 
-            WebSocket.Open += (s, e) =>
-            {
-                _keepAliveTimer.Start();
-            };
+            WebSocket.Open += WebSocketOpen;
             WebSocket.Closed += (s, e) =>
             {
                 ApiClient.StopSession();
@@ -617,7 +613,7 @@ namespace QuantConnect.Brokerages.Binance
             };
 
             // A single connection to stream.binance.com is only valid for 24 hours; expect to be disconnected at the 24 hour mark
-            // Source: https://github.com/binance-exchange/binance-official-api-docs/blob/master/web-socket-streams.md#general-wss-information
+            // Source: https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md#general-wss-information
             _reconnectTimer = new Timer
             {
                 // 23.5 hours
@@ -634,16 +630,29 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
+        /// Handles the event that occurs when the WebSocket connection is opened.
+        /// </summary>
+        /// <param name="_">An object representing the source of the event. This parameter is not used.</param>
+        /// <param name="eventArgs">An object that contains the event data associated with the WebSocket open event.</param>
+        private protected virtual void WebSocketOpen(object _, EventArgs eventArgs)
+        {
+            _keepAliveTimer.Start();
+        }
+
+        /// <summary>
         /// Get's the appropiate API client to use
         /// </summary>
         protected virtual BinanceBaseRestApiClient GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider,
             string restApiUrl, string apiKey, string apiSecret, RateGate rateGate)
         {
             restApiUrl ??= Config.Get("binance-api-url", "https://api.binance.com");
-            return (_algorithm == null || _algorithm.BrokerageModel.AccountType == AccountType.Cash)
-                 ? new BinanceSpotRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate)
-                 : new BinanceCrossMarginRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret,
-                     restApiUrl, rateGate);
+            if (_algorithm?.BrokerageModel.AccountType == AccountType.Margin)
+            {
+                return new BinanceCrossMarginRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate);
+            }
+            return MarketName == Market.BinanceUS
+                ? new BinanceSpotRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate)
+                : new BinanceGlobalSpotRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate);
         }
 
         /// <summary>
@@ -772,7 +781,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <summary>
         /// Force reconnect websocket
         /// </summary>
-        private void Connect(string sessionId)
+        private protected virtual void Connect(string sessionId)
         {
             Log.Trace("BinanceBrokerage.Connect(): Connecting...");
 
