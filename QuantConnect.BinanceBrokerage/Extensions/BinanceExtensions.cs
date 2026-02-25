@@ -52,9 +52,6 @@ public static class BinanceExtensions
     /// <returns>a token representing the request params</returns>
     public static string GetAuthenticationToken(string apiSecret, string payload)
     {
-        using (HMACSHA256 hmac = new(Encoding.UTF8.GetBytes(apiSecret)))
-        {
-            return hmac.ComputeHash(Encoding.UTF8.GetBytes(payload)).ToHexString();
-        }
+        return HMACSHA256.HashData(Encoding.UTF8.GetBytes(apiSecret), Encoding.UTF8.GetBytes(payload)).ToHexString();
     }
 }
