@@ -79,7 +79,12 @@ namespace QuantConnect.Brokerages.Binance
             var apiSecret = Read<string>(job.BrokerageData, "binance-api-secret", errors);
             var apiUrl = Read<string>(job.BrokerageData, "binance-api-url", errors);
             var wsUrl = Read<string>(job.BrokerageData, "binance-websocket-url", errors);
-            var ordersWsUrl = Read<string>(job.BrokerageData, "binance-orders-websocket-url", errors);
+            if (!job.BrokerageData.TryGetValue("binance-orders-websocket-url", out var ordersWsUrl))
+            {
+                ordersWsUrl = wsUrl.Contains("testnet", StringComparison.OrdinalIgnoreCase)
+                    ? "wss://ws-api.testnet.binance.vision:9443/ws-api/v3"
+                    : "wss://ws-api.binance.com:9443/ws-api/v3";
+            }
 
             if (errors.Count != 0)
             {
