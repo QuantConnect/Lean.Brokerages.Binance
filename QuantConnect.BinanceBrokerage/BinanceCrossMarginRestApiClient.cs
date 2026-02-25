@@ -25,7 +25,7 @@ namespace QuantConnect.Brokerages.Binance
     /// <summary>
     /// Binance Cross Margin REST API implementation
     /// </summary>
-    public class BinanceCrossMarginRestApiClient : BinanceBaseRestApiClient
+    public class BinanceCrossMarginRestApiClient : BinanceGlobalSpotRestApiClient
     {
         /// <summary>
         /// The Api prefix

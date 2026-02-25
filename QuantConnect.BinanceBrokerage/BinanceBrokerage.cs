@@ -46,7 +46,8 @@ namespace QuantConnect.Brokerages.Binance
     /// <summary>
     /// Binance brokerage implementation
     /// </summary>
-    public abstract partial class BinanceBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
+    [BrokerageFactory(typeof(BinanceBrokerageFactory))]
+    public partial class BinanceBrokerage : BaseWebsocketsBrokerage, IDataQueueHandler
     {
         private IAlgorithm _algorithm;
         private SymbolPropertiesDatabaseSymbolMapper _symbolMapper;
@@ -58,9 +59,9 @@ namespace QuantConnect.Brokerages.Binance
         private long _lastRequestId;
 
         private LiveNodePacket _job;
-        private protected string _webSocketBaseUrl;
+        private string _webSocketBaseUrl;
         private Timer _keepAliveTimer;
-        private protected Timer _reconnectTimer;
+        private Timer _reconnectTimer;
         private Lazy<BinanceBaseRestApiClient> _apiClientLazy;
 
         private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
@@ -71,6 +72,21 @@ namespace QuantConnect.Brokerages.Binance
         private bool _invalidTimeRangeHistoryLogged;
 
         private const int MaximumSymbolsPerConnection = 512;
+
+        /// <summary>
+        /// Maps Binance 'User Data Stream' URLs to their corresponding WS-API endpoints.
+        /// </summary>
+        private static readonly Dictionary<string, string> _webSocketUrlMap = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["wss://stream.binance.com:9443/ws"] = "wss://ws-api.binance.com:443/ws-api/v3",
+            ["wss://testnet.binance.vision/ws"] = "wss://ws-api.testnet.binance.vision/ws-api/v3"
+        };
+
+        /// <summary>
+        /// Indicates whether the WebSocket connection uses the WS-API endpoint 
+        /// that does not require a listen key (v3 API).
+        /// </summary>
+        private bool _isWsApiEndpointWithoutListenKey;
 
         protected BinanceBaseRestApiClient ApiClient => _apiClientLazy?.Value;
         protected string MarketName { get; set; }
@@ -553,6 +569,8 @@ namespace QuantConnect.Brokerages.Binance
             _algorithm = algorithm;
             _aggregator = aggregator;
             _webSocketBaseUrl = wssUrl;
+            _isWsApiEndpointWithoutListenKey = _webSocketUrlMap.TryGetValue(wssUrl, out var mapped);
+            _webSocketBaseUrl = _isWsApiEndpointWithoutListenKey ? mapped : wssUrl;
             _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage, ConcurrencyEnabled);
             _symbolMapper = new(marketName);
             MarketName = marketName;
@@ -589,7 +607,17 @@ namespace QuantConnect.Brokerages.Binance
 
                     // once we know the api endpoint we can subscribe to user data stream
                     apiClient.CreateListenKey();
-                    _keepAliveTimer.Elapsed += (s, e) => apiClient.SessionKeepAlive();
+                    _keepAliveTimer.Elapsed += (s, e) =>
+                    {
+                        if (_isWsApiEndpointWithoutListenKey)
+                        {
+                            WebSocket.Send(new Messages.Ping().ToJson());
+                        }
+                        else
+                        {
+                            apiClient.SessionKeepAlive();
+                        }
+                    };
 
                     Connect(apiClient.SessionId);
 
@@ -605,7 +633,14 @@ namespace QuantConnect.Brokerages.Binance
                 Interval = 30 * 60 * 1000
             };
 
-            WebSocket.Open += WebSocketOpen;
+            WebSocket.Open += (s, e) =>
+            {
+                _keepAliveTimer.Start();
+                if (_isWsApiEndpointWithoutListenKey)
+                {
+                    WebSocket.Send(new Messages.SubscribeSignature(ApiKey, ApiSecret).ToJson());
+                }
+            };
             WebSocket.Closed += (s, e) =>
             {
                 ApiClient.StopSession();
@@ -627,16 +662,6 @@ namespace QuantConnect.Brokerages.Binance
                 Log.Trace("Daily websocket restart: connect");
                 Connect();
             };
-        }
-
-        /// <summary>
-        /// Handles the event that occurs when the WebSocket connection is opened.
-        /// </summary>
-        /// <param name="_">An object representing the source of the event. This parameter is not used.</param>
-        /// <param name="eventArgs">An object that contains the event data associated with the WebSocket open event.</param>
-        private protected virtual void WebSocketOpen(object _, EventArgs eventArgs)
-        {
-            _keepAliveTimer.Start();
         }
 
         /// <summary>
@@ -781,12 +806,21 @@ namespace QuantConnect.Brokerages.Binance
         /// <summary>
         /// Force reconnect websocket
         /// </summary>
-        private protected virtual void Connect(string sessionId)
+        private void Connect(string sessionId)
         {
             Log.Trace("BinanceBrokerage.Connect(): Connecting...");
 
             _reconnectTimer.Start();
-            WebSocket.Initialize($"{_webSocketBaseUrl}/{sessionId}");
+
+            if (_isWsApiEndpointWithoutListenKey)
+            {
+                WebSocket.Initialize($"{_webSocketBaseUrl}");
+            }
+            else
+            {
+                WebSocket.Initialize($"{_webSocketBaseUrl}/{sessionId}");
+            }
+
             ConnectSync();
         }
 

@@ -13,34 +13,12 @@
  * limitations under the License.
 */
 
-using System;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using QuantConnect.Brokerages.Binance.Extensions;
 
 namespace QuantConnect.Brokerages.Binance.Messages
 {
-    public class SubscribeSignature
+    public class SubscribeSignature : BaseWebSocketMessage
     {
-        /// <summary>
-        /// JSON serialization settings used for WebSocket requests.
-        /// Uses camelCase property names to match API requirements.
-        /// </summary>
-        private static readonly JsonSerializerSettings _jsonSettings = new()
-        {
-            ContractResolver = new CamelCasePropertyNamesContractResolver()
-        };
-
-        /// <summary>
-        /// Arbitrary ID used to match responses to requests
-        /// </summary>
-        public string Id { get; }
-
-        /// <summary>
-        /// Request method name
-        /// </summary>
-        public string Method => "userDataStream.subscribe.signature";
-
         /// <summary>
         /// Request parameters. May be omitted if there are no parameters
         /// </summary>
@@ -51,12 +29,11 @@ namespace QuantConnect.Brokerages.Binance.Messages
         /// </summary>
         /// <param name="apiKey">The api key.</param>
         /// <param name="apiSecret">The api secret.</param>
-        public SubscribeSignature(string apiKey, string apiSecret)
+        public SubscribeSignature(string apiKey, string apiSecret) : base("userDataStream.subscribe.signature")
         {
             var timestamp = BinanceExtensions.GetNonce();
             var signature = BinanceExtensions.GetAuthenticationToken(apiSecret, payload: $"apiKey={apiKey}&timestamp={timestamp}");
 
-            Id = Guid.NewGuid().ToString();
             Params = new
             {
                 apiKey,
@@ -65,12 +42,6 @@ namespace QuantConnect.Brokerages.Binance.Messages
             };
         }
 
-        /// <summary>
-        /// Serializes the request to JSON for WebSocket transmission.
-        /// </summary>
-        public string ToJson()
-        {
-            return JsonConvert.SerializeObject(this, _jsonSettings);
-        }
+
     }
 }

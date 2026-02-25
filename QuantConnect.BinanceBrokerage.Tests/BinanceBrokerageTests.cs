@@ -93,7 +93,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 apiUrl,
                 ApiRateGate);
 
-            return new BinanceGlobalBrokerage(
+            return new BinanceBrokerage(
                     apiKey,
                     apiSecret,
                     apiUrl,

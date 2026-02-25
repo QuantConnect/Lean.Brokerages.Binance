@@ -31,7 +31,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <summary>
         /// Factory constructor
         /// </summary>
-        public BinanceBrokerageFactory() : base(typeof(BinanceGlobalBrokerage))
+        public BinanceBrokerageFactory() : base(typeof(BinanceBrokerage))
         {
         }
 
@@ -84,7 +84,7 @@ namespace QuantConnect.Brokerages.Binance
                 throw new ArgumentException(string.Join(Environment.NewLine, errors));
             }
 
-            var brokerage = new BinanceGlobalBrokerage(
+            var brokerage = new BinanceBrokerage(
                 apiKey,
                 apiSecret,
                 apiUrl,
