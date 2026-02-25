@@ -40,7 +40,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <param name="aggregator">the aggregator for consolidating ticks</param>
         /// <param name="job">The live job packet</param>
         public BinanceUSBrokerage(string apiKey, string apiSecret, string restApiUrl, string webSocketBaseUrl, IAlgorithm algorithm, IDataAggregator aggregator, LiveNodePacket job)
-            : base(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, algorithm, aggregator, job, Market.BinanceUS)
+            : base(apiKey, apiSecret, restApiUrl, webSocketBaseUrl, webSocketBaseUrl, algorithm, aggregator, job, Market.BinanceUS)
         {
         }
 
@@ -48,6 +48,7 @@ namespace QuantConnect.Brokerages.Binance
         {
             Initialize(
                 job.BrokerageData["binanceus-websocket-url"],
+                orderWsUrl: null,
                 job.BrokerageData["binanceus-api-url"],
                 job.BrokerageData["binanceus-api-key"],
                 job.BrokerageData["binanceus-api-secret"],

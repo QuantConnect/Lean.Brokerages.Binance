@@ -53,6 +53,8 @@ namespace QuantConnect.Brokerages.Binance
             { "binance-api-url", Config.Get("binance-api-url", "https://api.binance.com")},
             // paper trading available using wss://testnet.binance.vision/ws
             { "binance-websocket-url", Config.Get("binance-websocket-url", "wss://stream.binance.com:9443/ws")},
+            // paper trading available using wss://ws-api.testnet.binance.vision:9443/ws-api/v3
+            { "binance-orders-websocket-url", Config.Get("binance-orders-websocket-url", "wss://ws-api.binance.com:9443/ws-api/v3")},
 
             // load holdings if available
             { "live-holdings", Config.Get("live-holdings")},
@@ -77,6 +79,7 @@ namespace QuantConnect.Brokerages.Binance
             var apiSecret = Read<string>(job.BrokerageData, "binance-api-secret", errors);
             var apiUrl = Read<string>(job.BrokerageData, "binance-api-url", errors);
             var wsUrl = Read<string>(job.BrokerageData, "binance-websocket-url", errors);
+            var ordersWsUrl = Read<string>(job.BrokerageData, "binance-orders-websocket-url", errors);
 
             if (errors.Count != 0)
             {
@@ -89,6 +92,7 @@ namespace QuantConnect.Brokerages.Binance
                 apiSecret,
                 apiUrl,
                 wsUrl,
+                ordersWsUrl,
                 algorithm,
                 Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"), forceTypeNameOnExisting: false),
                 job);
