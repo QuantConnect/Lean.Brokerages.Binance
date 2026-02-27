@@ -67,6 +67,47 @@ namespace QuantConnect.Brokerages.Binance.Messages
         [JsonProperty("N")]
         public string FeeCurrency { get; set; }
 
+        /// <summary>
+        /// Quote asset volume (Original Quantity)
+        /// </summary>
+        [JsonProperty("q")]
+        public decimal OriginalAmount { get; set; }
+
+        /// <summary>
+        /// The total quote asset volume from taker buy orders.
+        /// <para><c>Available</c>: Binance Spot.</para>
+        /// <para><c>Not available</c>: Binance Futures.</para>
+        /// </summary>
+        [JsonProperty("Q")]
+        public decimal TakerBuyOriginalAmount { get; set; }
+
+        /// <summary>
+        /// Order (limit) price.
+        /// </summary>
+        [JsonProperty("p")]
+        public decimal Price { get; set; }
+
+        /// <summary>
+        /// Stop price (Spot / Margin).
+        /// </summary>
+        [JsonProperty("P")]
+        public decimal StopPrice { get; set; }
+
+        /// <summary>
+        /// Stop price (Futures — field key differs from Spot).
+        /// </summary>
+        [JsonProperty("sp")]
+        public decimal FuturesStopPrice { get; set; }
+
+        /// <summary>
+        /// Order type as reported by the exchange (e.g. LIMIT, MARKET, STOP_LOSS_LIMIT).
+        /// </summary>
+        [JsonProperty("o")]
+        public string OrderType { get; set; }
+
+        [JsonProperty("O")]
+        public long OrderCreationTime { get; set; }
+
         public OrderDirection Direction => Side.Equals("BUY", StringComparison.OrdinalIgnoreCase) ? OrderDirection.Buy : OrderDirection.Sell;
     }
 

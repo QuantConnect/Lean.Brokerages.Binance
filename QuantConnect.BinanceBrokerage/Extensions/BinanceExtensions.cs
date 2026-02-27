@@ -17,6 +17,7 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using QuantConnect.Brokerages.Binance.Messages;
 
 namespace QuantConnect.Brokerages.Binance.Extensions;
 
@@ -53,5 +54,28 @@ public static class BinanceExtensions
     public static string GetAuthenticationToken(string apiSecret, string payload)
     {
         return HMACSHA256.HashData(Encoding.UTF8.GetBytes(apiSecret), Encoding.UTF8.GetBytes(payload)).ToHexString();
+    }
+
+    /// <summary>
+    /// Maps a WebSocket <see cref="Execution"/> event to a Binance <see cref="OpenOrder"/> DTO,
+    /// using the order-level fields (<see cref="Execution.Price"/>, <see cref="Execution.StopPrice"/>,
+    /// <see cref="Execution.OrderType"/>) rather than the trade-level fields.
+    /// </summary>
+    public static OpenOrder MapExecutionToOpenOrder(this Execution execution)
+    {
+        return new OpenOrder
+        {
+            Id = execution.OrderId,
+            Symbol = execution.Symbol,
+            Price = execution.Price,
+            // Spot sends stop price as "P"; Futures sends it as "sp"
+            StopPrice = execution.StopPrice != 0 ? execution.StopPrice : execution.FuturesStopPrice,
+            OriginalAmount = execution.OriginalAmount,
+            ExecutedAmount = execution.LastExecutedQuantity,
+            Status = execution.OrderStatus,
+            Type = execution.OrderType,
+            Side = execution.Side,
+            Time = execution.TransactionTime
+        };
     }
 }

@@ -23,6 +23,7 @@ using System;
 using Newtonsoft.Json.Linq;
 using QuantConnect.Data;
 using System.Linq;
+using QuantConnect.Brokerages.Binance.Extensions;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -57,12 +58,16 @@ namespace QuantConnect.Brokerages.Binance
                 }
 
                 var objData = obj;
-                if (TryGetExecution(objData, out var execution))
+                if (TryGetExecution(objData, out var execution) && execution != null)
                 {
-                    if (execution != null && (execution.ExecutionType.Equals("TRADE", StringComparison.OrdinalIgnoreCase)
-                        || execution.ExecutionType.Equals("EXPIRED", StringComparison.OrdinalIgnoreCase)))
+                    if (execution.ExecutionType.Equals("TRADE", StringComparison.OrdinalIgnoreCase)
+                        || execution.ExecutionType.Equals("EXPIRED", StringComparison.OrdinalIgnoreCase))
                     {
                         OnFillOrder(execution);
+                    }
+                    else if (execution.ExecutionType.Equals("NEW", StringComparison.OrdinalIgnoreCase))
+                    {
+                        OnNewBrokerageOrder(execution);
                     }
                 }
             }
@@ -235,6 +240,34 @@ namespace QuantConnect.Brokerages.Binance
             {
                 Log.Error(e);
                 throw;
+            }
+        }
+
+        private void OnNewBrokerageOrder(Execution execution)
+        {
+            // If Lean already tracks this order (placed via PlaceOrder), skip it
+            var existingOrder = GetLeanOrder(execution.AlgoOrderId) ?? GetLeanOrder(execution.OrderId);
+            if (existingOrder != null)
+            {
+                return;
+            }
+
+            var openOrder = execution.MapExecutionToOpenOrder();
+            if (!TryCreateLeanOrder(openOrder, out var order))
+            {
+                Log.Error($"BinanceBrokerage.OnNewBrokerageOrder(): unsupported order type '{execution.OrderType}' for order {execution.OrderId}");
+                return;
+            }
+
+            OnNewBrokerageOrderNotification(new NewBrokerageOrderNotificationEventArgs(order));
+
+            // Lean assigns order.Id > 0 when it accepts the notification
+            if (order.Id != 0)
+            {
+                OnOrderEvent(new OrderEvent(order,
+                    Time.UnixMillisecondTimeStampToDateTime(execution.TransactionTime),
+                    OrderFee.Zero, "Order was submitted outside Lean")
+                { Status = OrderStatus.Submitted });
             }
         }
 
