@@ -22,6 +22,7 @@ using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using QuantConnect.Brokerages.Binance.Messages;
 using QuantConnect.Brokerages.Binance.Extensions;
+using QuantConnect.Brokerages.Binance.Enums;
 
 namespace QuantConnect.Brokerages.Binance.Tests
 {
@@ -800,10 +801,9 @@ namespace QuantConnect.Brokerages.Binance.Tests
 
             var objData = JObject.Parse(message);
 
-            Assert.IsTrue(BinanceBrokerage.TryGetExecution(objData, out var execution));
+            Assert.IsTrue(BinanceBrokerage.TryGetExecution(objData, out var execution, out var action));
 
-            Assert.IsTrue(execution.ExecutionType.Equals("TRADE", StringComparison.OrdinalIgnoreCase)
-                || execution.ExecutionType.Equals("EXPIRED", StringComparison.OrdinalIgnoreCase));
+            Assert.AreEqual(ExecutionAction.Fill, action);
 
             Assert.IsFalse(string.IsNullOrEmpty(execution.OrderId));
             Assert.AreEqual(expectedOrderId, execution.OrderId);
@@ -837,23 +837,21 @@ namespace QuantConnect.Brokerages.Binance.Tests
         [TestCaseSource(nameof(OrderWebSocketMessages))]
         public void MappingWebSocketOrderMessageToLeanOrder(OrderResponse response)
         {
-            var (orderType, message, expectedOrderId) = response;
+            var (_, message, expectedOrderId) = response;
 
             var objData = JObject.Parse(message);
 
-            Assert.IsTrue(BinanceBrokerage.TryGetExecution(objData, out var execution));
+            Assert.IsTrue(BinanceBrokerage.TryGetExecution(objData, out var execution, out _));
 
             // Step 1: Map Execution => OpenOrder (Binance DTO)
             var openOrder = execution.MapExecutionToOpenOrder();
 
             Assert.IsNotNull(openOrder);
             Assert.AreEqual(expectedOrderId, openOrder.Id);
-            Assert.IsFalse(string.IsNullOrEmpty(openOrder.Type),
-                "OpenOrder.Type must be populated for all WS messages");
+            Assert.IsFalse(string.IsNullOrEmpty(openOrder.Type), "OpenOrder.Type must be populated for all WS messages");
 
             // Step 2: OpenOrder => Lean Order
-            Assert.IsTrue(_brokerage.TryCreateLeanOrder(openOrder, out var order),
-                $"TryCreateLeanOrder failed for order type '{openOrder.Type}'");
+            Assert.IsTrue(_brokerage.TryCreateLeanOrder(openOrder, out var order), $"TryCreateLeanOrder failed for order type '{openOrder.Type}'");
 
             Assert.AreEqual(expectedOrderId, order.BrokerId.Single());
             Assert.That(order.Time, Is.GreaterThan(DateTime.MinValue));
@@ -990,7 +988,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
         {
             var objData = JObject.Parse(message);
 
-            Assert.IsFalse(BinanceBrokerage.TryGetExecution(objData, out var execution));
+            Assert.IsFalse(BinanceBrokerage.TryGetExecution(objData, out var execution, out _));
         }
 
 

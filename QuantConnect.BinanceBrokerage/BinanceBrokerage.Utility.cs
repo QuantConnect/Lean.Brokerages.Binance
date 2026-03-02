@@ -22,7 +22,7 @@ namespace QuantConnect.Brokerages.Binance
     /// </summary>
     public partial class BinanceBrokerage
     {
-        private static OrderStatus ConvertOrderStatus(string raw)
+        internal static OrderStatus ConvertOrderStatus(string raw)
         {
             switch (raw.LazyToUpper())
             {

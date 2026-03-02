@@ -24,6 +24,7 @@ using Newtonsoft.Json.Linq;
 using QuantConnect.Data;
 using System.Linq;
 using QuantConnect.Brokerages.Binance.Extensions;
+using QuantConnect.Brokerages.Binance.Enums;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -58,16 +59,17 @@ namespace QuantConnect.Brokerages.Binance
                 }
 
                 var objData = obj;
-                if (TryGetExecution(objData, out var execution) && execution != null)
+                if (TryGetExecution(objData, out var execution, out var action))
                 {
-                    if (execution.ExecutionType.Equals("TRADE", StringComparison.OrdinalIgnoreCase)
-                        || execution.ExecutionType.Equals("EXPIRED", StringComparison.OrdinalIgnoreCase))
+                    switch (action)
                     {
-                        OnFillOrder(execution);
-                    }
-                    else if (execution.ExecutionType.Equals("NEW", StringComparison.OrdinalIgnoreCase))
-                    {
-                        OnNewBrokerageOrder(execution);
+                        case ExecutionAction.Fill:
+                            OnFillOrder(execution);
+                            break;
+                        case ExecutionAction.NewOrder:
+                            OnNewBrokerageOrder(execution);
+                            break;
+                            // ExecutionAction.None: routine update — nothing to do
                     }
                 }
             }
@@ -78,8 +80,21 @@ namespace QuantConnect.Brokerages.Binance
             }
         }
 
-        internal static bool TryGetExecution(JObject objData, out Execution execution)
+        /// <summary>
+        /// Tries to parse a WebSocket JSON payload into an <see cref="Execution"/> and determines
+        /// what action the brokerage should take for it.
+        /// </summary>
+        /// <remarks>
+        /// Handles three wire formats:
+        /// <list type="number">
+        ///   <item><c>{ "e": "executionReport", … }</c> — standard Spot stream</item>
+        ///   <item><c>{ "e": "ORDER_TRADE_UPDATE", "o": { … } }</c> — Futures stream</item>
+        ///   <item><c>{ "subscriptionId": …, "event": { "e": "executionReport", … } }</c> — Spot WS-API</item>
+        /// </list>
+        /// </remarks>
+        internal static bool TryGetExecution(JObject objData, out Execution execution, out ExecutionAction action)
         {
+            action = ExecutionAction.None;
             execution = null;
             var objEventType = objData["e"];
             if (objEventType != null)
@@ -89,18 +104,48 @@ namespace QuantConnect.Brokerages.Binance
                 {
                     case "executionReport":
                         execution = objData.ToObject<Execution>();
-                        return true;
+                        break;
                     case "ORDER_TRADE_UPDATE":
                         execution = objData["o"].ToObject<Execution>();
-                        return true;
+                        break;
+                    default:
+                        return false;
                 }
             }
             else if (objData["event"]?["e"]?.Value<string>() == "executionReport")
             {
                 execution = objData["event"].ToObject<Execution>();
-                return execution != null;
             }
-            return false;
+
+            if (execution == null)
+            {
+                return false;
+            }
+
+            switch (execution.ExecutionType?.ToUpperInvariant())
+            {
+                case "TRADE":
+                    action = ExecutionAction.Fill;
+                    break;
+                // Json: x:EXPIRED, o:STOP / STOP_MARKET — the stop price was hit and the trigger order is consumed.
+                // The resulting child order arrives in a separate NEW event, so this EXPIRED
+                // must be **skipped** to avoid marking the Lean order as 'Invalid'.
+                case "EXPIRED" when execution.OrderType.Equals("STOP", StringComparison.OrdinalIgnoreCase)
+                                   || execution.OrderType.Equals("STOP_MARKET", StringComparison.OrdinalIgnoreCase):
+                    action = ExecutionAction.None;
+                    break;
+                case "EXPIRED":
+                    action = ExecutionAction.Fill;
+                    break;
+                case "NEW":
+                    action = ExecutionAction.NewOrder;
+                    break;
+                default:
+                    action = ExecutionAction.None;
+                    break;
+            }
+
+            return true;
         }
 
         private void OnDataMessage(WebSocketMessage webSocketMessage)
@@ -243,7 +288,7 @@ namespace QuantConnect.Brokerages.Binance
             }
         }
 
-        private void OnNewBrokerageOrder(Execution execution)
+        internal void OnNewBrokerageOrder(Execution execution)
         {
             // If Lean already tracks this order (placed via PlaceOrder), skip it
             var existingOrder = GetLeanOrder(execution.AlgoOrderId) ?? GetLeanOrder(execution.OrderId);
@@ -271,7 +316,7 @@ namespace QuantConnect.Brokerages.Binance
             }
         }
 
-        private Orders.Order GetLeanOrder(string brokerageOrderId)
+        internal virtual Orders.Order GetLeanOrder(string brokerageOrderId)
         {
             // Binance may send "0" as the order id for algo orders
             if (string.IsNullOrEmpty(brokerageOrderId) || brokerageOrderId.Equals("0", StringComparison.InvariantCultureIgnoreCase))
