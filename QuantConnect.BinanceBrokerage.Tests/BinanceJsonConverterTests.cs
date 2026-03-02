@@ -618,6 +618,53 @@ namespace QuantConnect.Brokerages.Binance.Tests
         }
     ]
 }").SetArgDisplayNames("subscriptionResponse");
+
+                yield return new TestCaseData(@"{
+    ""e"": ""TRADE_LITE"",
+    ""E"": 1772461802803,
+    ""T"": 1772461802803,
+    ""s"": ""ACHUSDT"",
+    ""q"": ""800"",
+    ""p"": ""0.0000000"",
+    ""m"": false,
+    ""c"": ""nOVzgnvTSGAbIWUtqT8yBT"",
+    ""S"": ""BUY"",
+    ""L"": ""0.0065670"",
+    ""l"": ""800"",
+    ""t"": 258306880,
+    ""i"": 4903991227
+}").SetArgDisplayNames("Future.TRADE_LITE");
+
+                yield return new TestCaseData(@"{
+    ""e"": ""ACCOUNT_UPDATE"",
+    ""T"": 1772461802803,
+    ""E"": 1772461802803,
+    ""a"": {
+        ""B"": [
+            {
+                ""a"": ""USDT"",
+                ""wb"": ""6.02834824"",
+                ""cw"": ""0.77598304"",
+                ""bc"": ""0""
+            }
+        ],
+        ""P"": [
+            {
+                ""s"": ""ACHUSDT"",
+                ""pa"": ""800"",
+                ""ep"": ""0.006567"",
+                ""cr"": ""1.19615403"",
+                ""up"": ""-0.001392"",
+                ""mt"": ""isolated"",
+                ""iw"": ""5.2523652"",
+                ""ps"": ""BOTH"",
+                ""ma"": ""USDT"",
+                ""bep"": ""0.0065702835""
+            }
+        ],
+        ""m"": ""ORDER""
+    }
+}").SetArgDisplayNames("Future.ACCOUNT_UPDATE");
             }
         }
 
