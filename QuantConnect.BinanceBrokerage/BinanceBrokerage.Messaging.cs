@@ -131,8 +131,9 @@ namespace QuantConnect.Brokerages.Binance
                 // Json: x:EXPIRED, o:STOP / STOP_MARKET — the stop price was hit and the trigger order is consumed.
                 // The resulting child order arrives in a separate NEW event, so this EXPIRED
                 // must be **skipped** to avoid marking the Lean order as 'Invalid'.
-                case "EXPIRED" when execution.OrderType.Equals("STOP", StringComparison.OrdinalIgnoreCase)
-                                   || execution.OrderType.Equals("STOP_MARKET", StringComparison.OrdinalIgnoreCase):
+                case "EXPIRED" 
+                when execution.OrderType.Equals("STOP", StringComparison.OrdinalIgnoreCase)
+                || execution.OrderType.Equals("STOP_MARKET", StringComparison.OrdinalIgnoreCase):
                     action = ExecutionAction.None;
                     break;
                 case "EXPIRED":

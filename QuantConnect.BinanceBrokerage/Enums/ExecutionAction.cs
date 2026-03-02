@@ -26,12 +26,12 @@ namespace QuantConnect.Brokerages.Binance.Enums
         None,
 
         /// <summary>
-        /// A order / real-expiry event: call <see cref="BinanceBrokerage.OnFillOrder"/>.
+        /// A trade or real-expiry event: call <see cref="BinanceBrokerage.OnFillOrder"/>.
         /// </summary>
         Fill,
 
         /// <summary>
-        /// A order was cancelled.
+        /// An order was canceled externally or by REST: call <see cref="BinanceBrokerage.OnFillOrder"/>.
         /// </summary>
         Cancel,
 

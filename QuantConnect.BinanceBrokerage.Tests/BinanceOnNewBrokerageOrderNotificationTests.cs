@@ -135,13 +135,13 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 ).SetArgDisplayNames("SpotWsApi_Buy_NEW_Fill");
 
                 // Future LIMIT BUY that is externally canceled: NEW => CANCELED.
-                // CANCELED is routed to Fill so OnFillOrder can propagate Canceled status to Lean.
+                // CANCELED routes to Cancel so OnFillOrder can propagate Canceled status to Lean.
                 yield return new TestCaseData(
                     "WebSocketFutureLimitSubmittedCancelled.json",
                     new[]
                     {
                         new LifecycleStep(ExecutionAction.NewOrder, OrderStatus.Submitted),
-                        new LifecycleStep(ExecutionAction.Fill,     OrderStatus.Canceled),
+                        new LifecycleStep(ExecutionAction.Cancel,   OrderStatus.Canceled),
                     }
                 ).SetArgDisplayNames("FutureLimit_Buy_NEW_Canceled");
             }
@@ -187,18 +187,24 @@ namespace QuantConnect.Brokerages.Binance.Tests
         }
 
         /// <summary>
-        /// Verifies that <see cref="BinanceBrokerage.TryGetExecution"/> correctly maps
-        /// <c>x:EXPIRED</c> on a STOP / STOP_MARKET order to <see cref="ExecutionAction.None"/>
-        /// (stop-trigger consumed — NOT a real failure).  All other EXPIRED variants must map to
-        /// <see cref="ExecutionAction.Fill"/> so that <c>ConvertOrderStatus("EXPIRED")</c> can
-        /// emit <c>OrderStatus.Invalid</c> for genuine order expiries.
+        /// Verifies that <see cref="BinanceBrokerage.TryGetExecution"/> produces the correct
+        /// <see cref="ExecutionAction"/> for every significant execution-type / order-type
+        /// combination.  Key rules:
+        /// <list type="bullet">
+        ///   <item><c>x:EXPIRED, o:STOP|STOP_MARKET</c> => <see cref="ExecutionAction.None"/>
+        ///         (stop-trigger consumed, child NEW arrives separately).</item>
+        ///   <item><c>x:EXPIRED, o:&lt;other&gt;</c> => <see cref="ExecutionAction.Fill"/>
+        ///         (real expiry — <c>ConvertOrderStatus</c> maps it to <see cref="OrderStatus.Invalid"/>).</item>
+        ///   <item><c>x:CANCELED</c> => <see cref="ExecutionAction.Cancel"/>
+        ///         (routes to <c>OnFillOrder</c> which deduplicates REST-initiated cancels).</item>
+        /// </list>
         /// </summary>
         [TestCase("STOP", "EXPIRED", ExecutionAction.None, OrderStatus.None, Description = "ExpiredStop_IsSkipped")]
         [TestCase("STOP_MARKET", "EXPIRED", ExecutionAction.None, OrderStatus.None, Description = "ExpiredStopMarket_IsSkipped")]
         [TestCase("LIMIT", "EXPIRED", ExecutionAction.Fill, OrderStatus.Invalid, Description = "ExpiredLimit_IsInvalid")]
         [TestCase("MARKET", "TRADE", ExecutionAction.Fill, OrderStatus.Filled, Description = "TradeMarket_IsFill")]
         [TestCase("LIMIT", "NEW", ExecutionAction.NewOrder, OrderStatus.Submitted, Description = "NewLimit_IsNewOrder")]
-        [TestCase("LIMIT", "CANCELED", ExecutionAction.Fill, OrderStatus.Canceled, Description = "Canceled_IsFill")]
+        [TestCase("LIMIT", "CANCELED", ExecutionAction.Cancel, OrderStatus.Canceled, Description = "Canceled_IsCancel")]
         public void TryGetExecutionExecutionTypeRoutesToExpectedAction(string orderType, string execType, ExecutionAction expectedAction, OrderStatus expectedStatus)
         {
             // `x` = execution type; `X` = order status — they are different fields.
