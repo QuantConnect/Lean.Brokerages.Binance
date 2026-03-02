@@ -22,6 +22,7 @@ using QuantConnect.Orders;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using QuantConnect.Brokerages.Binance.Enums;
+using QuantConnect.Brokerages.Binance.Messages;
 
 namespace QuantConnect.Brokerages.Binance.Tests
 {
@@ -90,6 +91,59 @@ namespace QuantConnect.Brokerages.Binance.Tests
                         new LifecycleStep(ExecutionAction.Fill,     OrderStatus.Filled),
                     }
                 ).SetArgDisplayNames("FutureLimit_Buy_NEW_Fill");
+
+                // Future STOP (stop-limit) BUY: ALGO_UPDATE[NEW, TRIGGERING] are skipped,
+                // then ORDER_TRADE_UPDATE[NEW] => working limit order, then FILLED.
+                // The file also contains interleaved ALGO_UPDATE events that TryGetExecution skips.
+                yield return new TestCaseData(
+                    "WebSocketFutureStopLimitSubmittedFilled.json",
+                    new[]
+                    {
+                        new LifecycleStep(ExecutionAction.NewOrder, OrderStatus.Submitted),
+                        new LifecycleStep(ExecutionAction.Fill,     OrderStatus.Filled),
+                    }
+                ).SetArgDisplayNames("FutureStopLimit_Buy_NEW_Fill");
+
+                // Future STOP_MARKET BUY: ALGO_UPDATE events are skipped, the resulting
+                // MARKET child order partially fills then fully fills.
+                yield return new TestCaseData(
+                    "WebSocketFutureStopMarketSubmitPartiallyFilledFilled.json",
+                    new[]
+                    {
+                        new LifecycleStep(ExecutionAction.NewOrder, OrderStatus.Submitted),
+                        new LifecycleStep(ExecutionAction.Fill,     OrderStatus.PartiallyFilled),
+                        new LifecycleStep(ExecutionAction.Fill,     OrderStatus.Filled),
+                    }
+                ).SetArgDisplayNames("FutureStopMarket_Buy_NEW_PartialFill_Fill");
+
+                // Future STOP_MARKET BUY that is canceled before triggering.
+                // All events are ALGO_UPDATE — TryGetExecution returns false for every one.
+                yield return new TestCaseData(
+                    "WebSocketFutureStopMarketSubmittedCanceled.json",
+                    Array.Empty<LifecycleStep>()
+                ).SetArgDisplayNames("FutureStopMarket_Buy_Canceled_NoParseableEvents");
+
+                // Spot LIMIT BUY placed via the WS-API (subscriptionId wrapper format): NEW => FILLED.
+                // Note: despite the "Market" in the filename the Binance payload type is LIMIT.
+                yield return new TestCaseData(
+                    "WebSocketGlobalSpotMarketSubmittedFilled.json",
+                    new[]
+                    {
+                        new LifecycleStep(ExecutionAction.NewOrder, OrderStatus.Submitted),
+                        new LifecycleStep(ExecutionAction.Fill,     OrderStatus.Filled),
+                    }
+                ).SetArgDisplayNames("SpotWsApi_Buy_NEW_Fill");
+
+                // Future LIMIT BUY that is externally canceled: NEW => CANCELED.
+                // CANCELED is routed to Fill so OnFillOrder can propagate Canceled status to Lean.
+                yield return new TestCaseData(
+                    "WebSocketFutureLimitSubmittedCancelled.json",
+                    new[]
+                    {
+                        new LifecycleStep(ExecutionAction.NewOrder, OrderStatus.Submitted),
+                        new LifecycleStep(ExecutionAction.Fill,     OrderStatus.Canceled),
+                    }
+                ).SetArgDisplayNames("FutureLimit_Buy_NEW_Canceled");
             }
         }
 
@@ -106,16 +160,23 @@ namespace QuantConnect.Brokerages.Binance.Tests
             var filePath = Path.Combine("TestData", fileName);
             Assert.IsTrue(File.Exists(filePath), $"TestData file not found: {filePath}");
 
-            var events = ParseNdjson(filePath).ToList();
+            // Collect only parseable events — ALGO_UPDATE events return false and are skipped.
+            var parseableEvents = new List<(Execution Execution, ExecutionAction Action)>();
+            foreach (var jObj in ParseNdjson(filePath))
+            {
+                if (BinanceBrokerage.TryGetExecution(jObj, out var exec, out var act))
+                {
+                    parseableEvents.Add((exec, act));
+                }
+            }
 
-            Assert.AreEqual(expectedSteps.Length, events.Count, $"Expected {expectedSteps.Length} WS events in {fileName} but found {events.Count}.");
+            Assert.AreEqual(expectedSteps.Length, parseableEvents.Count,
+                $"Expected {expectedSteps.Length} parseable WS events in {fileName} but found {parseableEvents.Count}.");
 
-            for (var i = 0; i < events.Count; i++)
+            for (var i = 0; i < parseableEvents.Count; i++)
             {
                 var step = expectedSteps[i];
-                var jObj = events[i];
-
-                Assert.IsTrue(BinanceBrokerage.TryGetExecution(jObj, out var execution, out var action), $"Event {i}: TryGetExecution returned false.");
+                var (execution, action) = parseableEvents[i];
 
                 Assert.AreEqual(step.Action, action, $"Event {i}: expected action {step.Action} but got {action}.");
 
@@ -137,7 +198,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
         [TestCase("LIMIT", "EXPIRED", ExecutionAction.Fill, OrderStatus.Invalid, Description = "ExpiredLimit_IsInvalid")]
         [TestCase("MARKET", "TRADE", ExecutionAction.Fill, OrderStatus.Filled, Description = "TradeMarket_IsFill")]
         [TestCase("LIMIT", "NEW", ExecutionAction.NewOrder, OrderStatus.Submitted, Description = "NewLimit_IsNewOrder")]
-        [TestCase("LIMIT", "CANCELED", ExecutionAction.None, OrderStatus.None, Description = "Canceled_IsIgnored")]
+        [TestCase("LIMIT", "CANCELED", ExecutionAction.Fill, OrderStatus.Canceled, Description = "Canceled_IsFill")]
         public void TryGetExecutionExecutionTypeRoutesToExpectedAction(string orderType, string execType, ExecutionAction expectedAction, OrderStatus expectedStatus)
         {
             // `x` = execution type; `X` = order status — they are different fields.
@@ -220,6 +281,62 @@ namespace QuantConnect.Brokerages.Binance.Tests
         }
 
         /// <summary>
+        /// Covers two CANCELED scenarios for <see cref="BinanceBrokerage.OnFillOrder"/>:
+        /// <list type="bullet">
+        ///   <item>
+        ///     <term>Already Canceled (REST-initiated)</term>
+        ///     <description>
+        ///       <c>CancelOrder</c> (REST) fires <c>OnOrderEvent(Canceled)</c> immediately on
+        ///       success, so the subsequent WS <c>x:CANCELED</c> is a duplicate and must be
+        ///       dropped (0 events fired).
+        ///     </description>
+        ///   </item>
+        ///   <item>
+        ///     <term>Externally canceled (Web UI / another client)</term>
+        ///     <description>
+        ///       No Lean-side <c>CancelOrder</c> call was made — the order is still
+        ///       <see cref="OrderStatus.Submitted"/>.  The WS event is the only notification
+        ///       and must propagate (1 event fired with <see cref="OrderStatus.Canceled"/>).
+        ///     </description>
+        ///   </item>
+        /// </list>
+        /// </summary>
+        [TestCase(OrderStatus.Canceled, 0, Description = "RestCanceled_WsDuplicate_IsDropped")]
+        [TestCase(OrderStatus.Submitted, 1, Description = "ExternalCancel_Propagates")]
+        public void OnFillOrderCanceledExecutionDeduplicatesRestAndPropagatesExternal(
+            OrderStatus priorOrderStatus, int expectedEventCount)
+        {
+            const string orderId = "4904480369";
+
+            using var brokerage = new TestableBinanceBrokerage();
+            brokerage.TrackBrokerageId(orderId, priorOrderStatus);
+
+            var eventsFired = new List<OrderEvent>();
+            brokerage.OrdersStatusChanged += (_, events) => eventsFired.AddRange(events);
+
+            var execution = JObject.Parse($@"{{
+                ""s"": ""ACHUSDT"", ""S"": ""BUY"", ""o"": ""LIMIT"",
+                ""x"": ""CANCELED"", ""X"": ""CANCELED"",
+                ""i"": ""{orderId}"", ""si"": ""0"",
+                ""l"": ""0"", ""L"": ""0"", ""n"": ""0"",
+                ""T"": 1700000000000, ""t"": 0
+            }}").ToObject<Execution>();
+
+            brokerage.OnFillOrder(execution);
+
+            Assert.AreEqual(expectedEventCount, eventsFired.Count,
+                priorOrderStatus == OrderStatus.Canceled
+                    ? "WS CANCELED must be dropped when CancelOrder (REST) already fired the event."
+                    : "External cancel must propagate to Lean via OnFillOrder.");
+
+            if (expectedEventCount > 0)
+            {
+                Assert.AreEqual(OrderStatus.Canceled, eventsFired[0].Status,
+                    "The propagated event must carry Canceled status.");
+            }
+        }
+
+        /// <summary>
         /// Reads a Newline-Delimited JSON (NDJSON) file where each top-level JSON object is one
         /// WS event and returns them in order.  Blank lines between objects are ignored.
         /// </summary>
@@ -245,27 +362,32 @@ namespace QuantConnect.Brokerages.Binance.Tests
         /// </summary>
         private sealed class TestableBinanceBrokerage : BinanceBrokerage
         {
-            private readonly HashSet<string> _trackedIds =
+            // Maps broker order ID => the Lean OrderStatus that GetLeanOrder should report.
+            private readonly Dictionary<string, OrderStatus> _trackedIds =
                 new(StringComparer.OrdinalIgnoreCase);
 
             /// <summary>
-            /// Registers <paramref name="brokerageId"/> as an order that Lean already tracks,
-            /// causing <see cref="BinanceBrokerage.OnNewBrokerageOrder"/> to exit early.
+            /// Registers <paramref name="brokerageId"/> as an order that Lean already tracks
+            /// with <see cref="OrderStatus.None"/> (sentinel — caller only checks for non-null).
             /// </summary>
-            public void TrackBrokerageId(string brokerageId) => _trackedIds.Add(brokerageId);
+            public void TrackBrokerageId(string brokerageId) =>
+                _trackedIds[brokerageId] = OrderStatus.None;
+
+            /// <summary>
+            /// Registers <paramref name="brokerageId"/> with a specific <paramref name="status"/>
+            /// so tests can simulate any lifecycle state (e.g. already-Canceled after REST cancel).
+            /// </summary>
+            public void TrackBrokerageId(string brokerageId, OrderStatus status) =>
+                _trackedIds[brokerageId] = status;
 
             /// <inheritdoc/>
-            /// <remarks>
-            /// Returns a sentinel <see cref="MarketOrder"/> for tracked IDs so the caller only
-            /// needs a null-check; returns <c>null</c> for everything else.
-            /// </remarks>
             internal override Orders.Order GetLeanOrder(string brokerageOrderId)
             {
                 if (!string.IsNullOrEmpty(brokerageOrderId)
                     && !brokerageOrderId.Equals("0", StringComparison.OrdinalIgnoreCase)
-                    && _trackedIds.Contains(brokerageOrderId))
+                    && _trackedIds.TryGetValue(brokerageOrderId, out var status))
                 {
-                    return new MarketOrder(); // sentinel — caller checks for non-null only
+                    return new MarketOrder { Status = status };
                 }
 
                 return null;

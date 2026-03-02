@@ -63,6 +63,7 @@ namespace QuantConnect.Brokerages.Binance
                 {
                     switch (action)
                     {
+                        case ExecutionAction.Cancel:
                         case ExecutionAction.Fill:
                             OnFillOrder(execution);
                             break;
@@ -139,6 +140,9 @@ namespace QuantConnect.Brokerages.Binance
                     break;
                 case "NEW":
                     action = ExecutionAction.NewOrder;
+                    break;
+                case "CANCELED":
+                    action = ExecutionAction.Cancel;
                     break;
                 default:
                     action = ExecutionAction.None;
@@ -250,7 +254,7 @@ namespace QuantConnect.Brokerages.Binance
             }
         }
 
-        private void OnFillOrder(Execution data)
+        internal void OnFillOrder(Execution data)
         {
             try
             {
@@ -259,6 +263,16 @@ namespace QuantConnect.Brokerages.Binance
                 {
                     // not our order, nothing else to do here
                     Log.Error($"BinanceBrokerage.OnFillOrder(): order not found: {data.OrderId}[AlgoOrderId: {data.AlgoOrderId}");
+                    return;
+                }
+
+                var status = ConvertOrderStatus(data.OrderStatus);
+                // CancelOrder (REST) fires OnOrderEvent(Canceled) immediately on success.
+                // The subsequent WS CANCELED event is a duplicate — skip it to avoid
+                // sending the same terminal status twice. External cancels arrive here
+                // with the order in a non-canceled state, so they still propagate correctly.
+                if (order.Status == status && status == OrderStatus.Canceled)
+                {
                     return;
                 }
 
@@ -271,7 +285,6 @@ namespace QuantConnect.Brokerages.Binance
                     // might not be sent if zero fee
                     orderFee = new OrderFee(new CashAmount(data.Fee, data.FeeCurrency));
                 }
-                var status = ConvertOrderStatus(data.OrderStatus);
                 var orderEvent = new OrderEvent
                 (
                     order.Id, order.Symbol, updTime, status,

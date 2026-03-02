@@ -26,9 +26,14 @@ namespace QuantConnect.Brokerages.Binance.Enums
         None,
 
         /// <summary>
-        /// A trade / real-expiry event: call <see cref="BinanceBrokerage.OnFillOrder"/>.
+        /// A order / real-expiry event: call <see cref="BinanceBrokerage.OnFillOrder"/>.
         /// </summary>
         Fill,
+
+        /// <summary>
+        /// A order was cancelled.
+        /// </summary>
+        Cancel,
 
         /// <summary>
         /// A NEW order that Lean does not yet know about (placed externally, e.g. Binance Web UI):
