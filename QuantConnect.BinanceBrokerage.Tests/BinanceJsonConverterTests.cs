@@ -489,6 +489,46 @@ namespace QuantConnect.Brokerages.Binance.Tests
         ""er"": ""0""
     }
 }", "4759374544");
+
+                yield return new OrderResponse(OrderType.NewApiSpotMarket, @"{
+    ""subscriptionId"": 0,
+    ""event"": {
+        ""e"": ""executionReport"",
+        ""E"": 1772454841401,
+        ""s"": ""ACHUSDT"",
+        ""c"": ""15ccpBJHVXKrRcctVUy6uX"",
+        ""S"": ""BUY"",
+        ""o"": ""MARKET"",
+        ""f"": ""GTC"",
+        ""q"": ""800.00000000"",
+        ""p"": ""0.00000000"",
+        ""P"": ""0.00000000"",
+        ""F"": ""0.00000000"",
+        ""g"": -1,
+        ""C"": """",
+        ""x"": ""TRADE"",
+        ""X"": ""FILLED"",
+        ""r"": ""NONE"",
+        ""i"": 1281704667,
+        ""l"": ""800.00000000"",
+        ""z"": ""800.00000000"",
+        ""L"": ""0.00663000"",
+        ""n"": ""0.00000639"",
+        ""N"": ""BNB"",
+        ""T"": 1772454841401,
+        ""t"": 65043716,
+        ""I"": 2623801879,
+        ""w"": false,
+        ""m"": false,
+        ""M"": true,
+        ""O"": 1772454841401,
+        ""Z"": ""5.30400000"",
+        ""Y"": ""5.30400000"",
+        ""Q"": ""0.00000000"",
+        ""W"": 1772454841401,
+        ""V"": ""EXPIRE_MAKER""
+    }
+}", "1281704667");
             }
         }
 
@@ -508,7 +548,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
             Assert.AreEqual(expectedOrderId, execution.OrderId);
 
             Assert.Greater(execution.LastExecutedPrice, 0);
-            Assert.IsTrue(execution.Direction 
+            Assert.IsTrue(execution.Direction
                 is Orders.OrderDirection.Buy or Orders.OrderDirection.Sell);
             Assert.Greater(execution.LastExecutedQuantity, 0);
             Assert.Greater(execution.TransactionTime, 0);
@@ -522,6 +562,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 case OrderType.FutureAlgoStopLimit:
                     Assert.IsFalse(string.IsNullOrEmpty(execution.AlgoOrderId));
                     break;
+                case OrderType.NewApiSpotMarket:
                 case OrderType.SpotMarket:
                     Assert.IsTrue(string.IsNullOrEmpty(execution.AlgoOrderId));
                     break;
@@ -529,6 +570,110 @@ namespace QuantConnect.Brokerages.Binance.Tests
                     Assert.IsTrue(execution.AlgoOrderId.Equals("0", StringComparison.InvariantCultureIgnoreCase));
                     break;
             }
+        }
+
+        private static IEnumerable<TestCaseData> NotSupportWebSocketMessages
+        {
+            get
+            {
+                yield return new TestCaseData(@"{
+    ""subscriptionId"": 0,
+    ""event"": {
+        ""e"": ""outboundAccountPosition"",
+        ""E"": 1772457243788,
+        ""u"": 1772457243788,
+        ""B"": [
+            {
+                ""a"": ""BNB"",
+                ""f"": ""0.00594843"",
+                ""l"": ""0.00000000""
+            },
+            {
+                ""a"": ""USDT"",
+                ""f"": ""7.08944059"",
+                ""l"": ""0.00000000""
+            },
+            {
+                ""a"": ""ACH"",
+                ""f"": ""0.38000000"",
+                ""l"": ""0.00000000""
+            }
+        ]
+    }
+}").SetArgDisplayNames("outboundAccountPosition");
+
+                yield return new TestCaseData(@"{
+    ""id"": ""7f7d5503-7a00-41e6-8740-8155fb37a6c0"",
+    ""status"": 200,
+    ""result"": {
+        ""subscriptionId"": 0
+    },
+    ""rateLimits"": [
+        {
+            ""rateLimitType"": ""REQUEST_WEIGHT"",
+            ""interval"": ""MINUTE"",
+            ""intervalNum"": 1,
+            ""limit"": 6000,
+            ""count"": 4
+        }
+    ]
+}").SetArgDisplayNames("subscriptionResponse");
+
+                yield return new TestCaseData(@"{
+    ""e"": ""TRADE_LITE"",
+    ""E"": 1772461802803,
+    ""T"": 1772461802803,
+    ""s"": ""ACHUSDT"",
+    ""q"": ""800"",
+    ""p"": ""0.0000000"",
+    ""m"": false,
+    ""c"": ""nOVzgnvTSGAbIWUtqT8yBT"",
+    ""S"": ""BUY"",
+    ""L"": ""0.0065670"",
+    ""l"": ""800"",
+    ""t"": 258306880,
+    ""i"": 4903991227
+}").SetArgDisplayNames("Future.TRADE_LITE");
+
+                yield return new TestCaseData(@"{
+    ""e"": ""ACCOUNT_UPDATE"",
+    ""T"": 1772461802803,
+    ""E"": 1772461802803,
+    ""a"": {
+        ""B"": [
+            {
+                ""a"": ""USDT"",
+                ""wb"": ""6.02834824"",
+                ""cw"": ""0.77598304"",
+                ""bc"": ""0""
+            }
+        ],
+        ""P"": [
+            {
+                ""s"": ""ACHUSDT"",
+                ""pa"": ""800"",
+                ""ep"": ""0.006567"",
+                ""cr"": ""1.19615403"",
+                ""up"": ""-0.001392"",
+                ""mt"": ""isolated"",
+                ""iw"": ""5.2523652"",
+                ""ps"": ""BOTH"",
+                ""ma"": ""USDT"",
+                ""bep"": ""0.0065702835""
+            }
+        ],
+        ""m"": ""ORDER""
+    }
+}").SetArgDisplayNames("Future.ACCOUNT_UPDATE");
+            }
+        }
+
+        [TestCaseSource(nameof(NotSupportWebSocketMessages))]
+        public void DeserializeNotSupportWebSocketMessage(string message)
+        {
+            var objData = JObject.Parse(message);
+
+            Assert.IsFalse(BinanceBrokerage.TryGetExecution(objData, out var execution));
         }
 
 
@@ -545,7 +690,8 @@ namespace QuantConnect.Brokerages.Binance.Tests
             FutureMarket,
             FutureLimit,
             FutureAlgoStopLimit,
-            FutureAlgoStopMarket
+            FutureAlgoStopMarket,
+            NewApiSpotMarket,
         }
 
         [Test]

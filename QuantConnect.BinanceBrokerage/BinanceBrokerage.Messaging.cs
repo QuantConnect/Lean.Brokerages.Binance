@@ -90,6 +90,11 @@ namespace QuantConnect.Brokerages.Binance
                         return true;
                 }
             }
+            else if (objData["event"]?["e"]?.Value<string>() == "executionReport")
+            {
+                execution = objData["event"].ToObject<Execution>();
+                return execution != null;
+            }
             return false;
         }
 
