@@ -144,6 +144,29 @@ namespace QuantConnect.Brokerages.Binance.Tests
                         new LifecycleStep(ExecutionAction.Cancel,   OrderStatus.Canceled),
                     }
                 ).SetArgDisplayNames("FutureLimit_Buy_NEW_Canceled");
+
+                // Future STOP (stop-limit) BUY with FOK: stop triggers but the FOK limit order
+                // cannot be filled (er:"8") → EXPIRED is a real failure, not a trigger-consumed skip.
+                // Event 3 (CONDITIONAL_ORDER_TRIGGER_REJECT) is not parseable by TryGetExecution.
+                yield return new TestCaseData(
+                    "WebSocketFutureStopLimitSubmittedExpired.json",
+                    new[]
+                    {
+                        new LifecycleStep(ExecutionAction.NewOrder, OrderStatus.Submitted),
+                        new LifecycleStep(ExecutionAction.Fill,     OrderStatus.Invalid),
+                    }
+                ).SetArgDisplayNames("FutureStopLimit_FOK_NEW_Expired_Invalid");
+
+                // Spot LIMIT BUY with FOK (WS-API format) that cannot be filled: NEW => EXPIRED.
+                // o:LIMIT — always routes to Fill/Invalid regardless of er.
+                yield return new TestCaseData(
+                    "WebSocketSpotLimitFillOrKillSubmittedExpired.json",
+                    new[]
+                    {
+                        new LifecycleStep(ExecutionAction.NewOrder, OrderStatus.Submitted),
+                        new LifecycleStep(ExecutionAction.Fill,     OrderStatus.Invalid),
+                    }
+                ).SetArgDisplayNames("SpotLimit_FOK_NEW_Expired_Invalid");
             }
         }
 
@@ -244,6 +267,40 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 var leanStatus = BinanceBrokerage.ConvertOrderStatus(execution.OrderStatus);
                 Assert.AreEqual(expectedStatus, leanStatus, $"Unexpected Lean status for x={execType}, X={execution.OrderStatus}");
             }
+        }
+
+        /// <summary>
+        /// A Futures STOP order with a non-zero <c>er</c> error code on the <c>x:EXPIRED</c> event
+        /// means the order genuinely failed (e.g. the FOK limit could not be filled after the stop
+        /// triggered).  Unlike a trigger-consumed EXPIRED (<c>er:"0"</c>) this must route to
+        /// <see cref="ExecutionAction.Fill"/> so Lean receives an <see cref="OrderStatus.Invalid"/>
+        /// event rather than silently dropping the update.
+        /// </summary>
+        [Test]
+        public void FutureStopExpiredWithNonZeroErrorCode_RoutesToFill()
+        {
+            // ORDER_TRADE_UPDATE: x:EXPIRED, o:STOP, er:"8"
+            // er:8 = "initial stop order expired after the FOK limit could not be filled"
+            var json = @"{
+                ""e"": ""ORDER_TRADE_UPDATE"",
+                ""o"": {
+                    ""s"": ""ACHUSDT"", ""S"": ""BUY"", ""o"": ""STOP"",
+                    ""q"": ""100"", ""p"": ""0.01"", ""sp"": ""0.009"",
+                    ""x"": ""EXPIRED"", ""X"": ""EXPIRED"",
+                    ""i"": ""99999"", ""si"": ""0"",
+                    ""l"": ""0"", ""L"": ""0"", ""n"": ""0"",
+                    ""T"": 1700000000000, ""t"": 0,
+                    ""er"": ""8""
+                }
+            }";
+
+            var jObj = JObject.Parse(json);
+            Assert.IsTrue(BinanceBrokerage.TryGetExecution(jObj, out var execution, out var action));
+
+            Assert.AreEqual(ExecutionAction.Fill, action,
+                "STOP EXPIRED with non-zero er must route to Fill, not be silently skipped.");
+            Assert.AreEqual(OrderStatus.Invalid, BinanceBrokerage.ConvertOrderStatus(execution.OrderStatus),
+                "EXPIRED order status must map to Invalid.");
         }
 
         /// <summary>

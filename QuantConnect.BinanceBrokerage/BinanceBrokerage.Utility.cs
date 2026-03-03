@@ -24,6 +24,12 @@ namespace QuantConnect.Brokerages.Binance
     {
         internal static OrderStatus ConvertOrderStatus(string raw)
         {
+            return ConvertOrderStatus(raw, out _);
+        }
+
+        internal static OrderStatus ConvertOrderStatus(string raw, out string message)
+        {
+            message = null;
             switch (raw.LazyToUpper())
             {
                 case "NEW":
@@ -42,9 +48,10 @@ namespace QuantConnect.Brokerages.Binance
                     return OrderStatus.Canceled;
 
                 case "REJECTED":
-                case "EXPIRED":
                     return OrderStatus.Invalid;
-
+                case "EXPIRED":
+                    message = "The order has expired.";
+                    return OrderStatus.Invalid;
                 default:
                     return OrderStatus.None;
             }

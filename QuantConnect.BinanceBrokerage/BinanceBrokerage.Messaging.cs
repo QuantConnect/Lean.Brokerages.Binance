@@ -128,12 +128,15 @@ namespace QuantConnect.Brokerages.Binance
                 case "TRADE":
                     action = ExecutionAction.Fill;
                     break;
-                // Json: x:EXPIRED, o:STOP / STOP_MARKET — the stop price was hit and the trigger order is consumed.
-                // The resulting child order arrives in a separate NEW event, so this EXPIRED
-                // must be **skipped** to avoid marking the Lean order as 'Invalid'.
-                case "EXPIRED" 
-                when execution.OrderType.Equals("STOP", StringComparison.OrdinalIgnoreCase)
-                || execution.OrderType.Equals("STOP_MARKET", StringComparison.OrdinalIgnoreCase):
+                // x:EXPIRED, o:STOP / STOP_MARKET, er:0 — the stop price was hit and the trigger
+                // order is consumed normally; the child limit/market order arrives in a separate
+                // NEW event. Skip this event to avoid marking the Lean order as 'Invalid'.
+                // When er is non-zero (e.g. 8 = FOK rejected after trigger) the stop order
+                // genuinely failed and must be reported — fall through to the general EXPIRED case.
+                case "EXPIRED"
+                when (execution.OrderType.Equals("STOP", StringComparison.OrdinalIgnoreCase)
+                    || execution.OrderType.Equals("STOP_MARKET", StringComparison.OrdinalIgnoreCase))
+                    && execution.ExpiredReason == FuturesExpiredReason.None:
                     action = ExecutionAction.None;
                     break;
                 case "EXPIRED":
@@ -267,7 +270,7 @@ namespace QuantConnect.Brokerages.Binance
                     return;
                 }
 
-                var status = ConvertOrderStatus(data.OrderStatus);
+                var status = ConvertOrderStatus(data.OrderStatus, out var message);
                 // CancelOrder (REST) fires OnOrderEvent(Canceled) immediately on success.
                 // The subsequent WS CANCELED event is a duplicate — skip it to avoid
                 // sending the same terminal status twice. External cancels arrive here
@@ -286,11 +289,12 @@ namespace QuantConnect.Brokerages.Binance
                     // might not be sent if zero fee
                     orderFee = new OrderFee(new CashAmount(data.Fee, data.FeeCurrency));
                 }
+                message ??= $"Binance Order Event {data.Direction}";
                 var orderEvent = new OrderEvent
                 (
                     order.Id, order.Symbol, updTime, status,
                     data.Direction, fillPrice, fillQuantity,
-                    orderFee, $"Binance Order Event {data.Direction}"
+                    orderFee, message
                 );
 
                 OnOrderEvent(orderEvent);
