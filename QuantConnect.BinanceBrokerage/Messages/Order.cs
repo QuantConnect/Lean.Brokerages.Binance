@@ -51,6 +51,21 @@ namespace QuantConnect.Brokerages.Binance.Messages
     {
         [JsonProperty("transactTime")]
         public override long Time { get; set; }
+
+        /// <summary>
+        /// The Futures Coin API orders have 'updateTime' instead of 'transactTime'
+        /// </summary>
+        [JsonProperty("updateTime")]
+        protected long UpdateTime
+        {
+            set
+            {
+                if (Time == 0)
+                {
+                    Time = value;
+                }
+            }
+        }
     }
 
     public class AlgoOrder : NewOrder

@@ -270,10 +270,20 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
+        /// Create new order body payload
+        /// </summary>
+        /// <param name="order">Lean order</param>
+        /// <returns>The payload</returns>
+        protected virtual IDictionary<string, object> CreateOrderBody(Order order)
+        {
+            return CreateOrderBodyCore(order);
+        }
+
+        /// <summary>
         /// Create account new order body payload
         /// </summary>
         /// <param name="order">Lean order</param>
-        protected virtual IDictionary<string, object> CreateOrderBody(Order order)
+        protected IDictionary<string, object> CreateOrderBodyCore(Order order)
         {
             // supported time in force values {GTC, IOC, FOK}
             // use GTC as LEAN doesn't support others yet
@@ -346,6 +356,15 @@ namespace QuantConnect.Brokerages.Binance
         /// </summary>
         /// <param name="order">Lean order</param>
         protected virtual IEnumerable<IDictionary<string, object>> CreateCancelOrderBody(Order order)
+        {
+            return CreateCancelOrderBodyCore(order);
+        }
+
+        /// <summary>
+        /// Create account cancel order body payload
+        /// </summary>
+        /// <param name="order">Lean order</param>
+        protected IEnumerable<IDictionary<string, object>> CreateCancelOrderBodyCore(Order order)
         {
             var symbol = SymbolMapper.GetBrokerageSymbol(order.Symbol);
             foreach (var id in order.BrokerId)

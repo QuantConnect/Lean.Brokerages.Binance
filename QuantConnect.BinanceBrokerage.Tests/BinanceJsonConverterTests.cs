@@ -136,6 +136,60 @@ namespace QuantConnect.Brokerages.Binance.Tests
     ""triggerTime"": 0,
     ""goodTillDate"": 0
 }", "2000000184401794");
+
+                yield return new OrderResponse(OrderType.FutureCoinStopMarket, @"{
+    ""orderId"": 5834920738,
+    ""symbol"": ""SANDUSD_PERP"",
+    ""pair"": ""SANDUSD"",
+    ""status"": ""NEW"",
+    ""clientOrderId"": ""bN3K9RREvxx9drvN1EGth0"",
+    ""price"": ""0"",
+    ""avgPrice"": ""0.00"",
+    ""origQty"": ""1"",
+    ""executedQty"": ""0"",
+    ""cumQty"": ""0"",
+    ""cumBase"": ""0"",
+    ""timeInForce"": ""GTC"",
+    ""type"": ""STOP_MARKET"",
+    ""reduceOnly"": false,
+    ""closePosition"": false,
+    ""side"": ""BUY"",
+    ""positionSide"": ""BOTH"",
+    ""stopPrice"": ""0.0857"",
+    ""workingType"": ""CONTRACT_PRICE"",
+    ""priceProtect"": false,
+    ""origType"": ""STOP_MARKET"",
+    ""selfTradePreventionMode"": ""EXPIRE_MAKER"",
+    ""updateTime"": 1772571245283,
+    ""priceMatch"": ""NONE""
+}", "5834920738");
+
+                yield return new OrderResponse(OrderType.FutureCoinStopLimit, @"{
+    ""orderId"": 5834921880,
+    ""symbol"": ""SANDUSD_PERP"",
+    ""pair"": ""SANDUSD"",
+    ""status"": ""NEW"",
+    ""clientOrderId"": ""pB70Kz7B72u2NfbUtj0lUc"",
+    ""price"": ""0.0825"",
+    ""avgPrice"": ""0.00"",
+    ""origQty"": ""1"",
+    ""executedQty"": ""0"",
+    ""cumQty"": ""0"",
+    ""cumBase"": ""0"",
+    ""timeInForce"": ""GTC"",
+    ""type"": ""STOP"",
+    ""reduceOnly"": false,
+    ""closePosition"": false,
+    ""side"": ""BUY"",
+    ""positionSide"": ""BOTH"",
+    ""stopPrice"": ""0.0859"",
+    ""workingType"": ""CONTRACT_PRICE"",
+    ""priceProtect"": false,
+    ""origType"": ""STOP"",
+    ""selfTradePreventionMode"": ""EXPIRE_MAKER"",
+    ""updateTime"": 1772571305861,
+    ""priceMatch"": ""NONE""
+}", "5834921880");
             }
         }
 
@@ -234,6 +288,60 @@ namespace QuantConnect.Brokerages.Binance.Tests
         ""triggerTime"": 0,
         ""goodTillDate"": 0
     }", "2000000184401794");
+
+                yield return new OrderResponse(OrderType.FutureCoinStopMarket, @"    {
+        ""orderId"": 5834895424,
+        ""symbol"": ""SANDUSD_PERP"",
+        ""pair"": ""SANDUSD"",
+        ""status"": ""NEW"",
+        ""clientOrderId"": ""web_coin_nlle6z9j33xonuhyjxjhz76"",
+        ""price"": ""0"",
+        ""avgPrice"": ""0"",
+        ""origQty"": ""1"",
+        ""executedQty"": ""0"",
+        ""cumBase"": ""0"",
+        ""timeInForce"": ""GTC"",
+        ""type"": ""STOP_MARKET"",
+        ""reduceOnly"": false,
+        ""closePosition"": false,
+        ""side"": ""BUY"",
+        ""positionSide"": ""BOTH"",
+        ""stopPrice"": ""0.0855"",
+        ""workingType"": ""CONTRACT_PRICE"",
+        ""priceProtect"": true,
+        ""origType"": ""STOP_MARKET"",
+        ""selfTradePreventionMode"": ""EXPIRE_MAKER"",
+        ""time"": 1772568178006,
+        ""updateTime"": 1772568178006,
+        ""priceMatch"": ""NONE""
+    }", "5834895424");
+
+                yield return new OrderResponse(OrderType.FutureCoinStopLimit, @"    {
+        ""orderId"": 5834896554,
+        ""symbol"": ""SANDUSD_PERP"",
+        ""pair"": ""SANDUSD"",
+        ""status"": ""NEW"",
+        ""clientOrderId"": ""web_coin_c5vbvaj2gjacm5zzmibjvgf"",
+        ""price"": ""0.0845"",
+        ""avgPrice"": ""0"",
+        ""origQty"": ""1"",
+        ""executedQty"": ""0"",
+        ""cumBase"": ""0"",
+        ""timeInForce"": ""GTC"",
+        ""type"": ""STOP"",
+        ""reduceOnly"": false,
+        ""closePosition"": false,
+        ""side"": ""BUY"",
+        ""positionSide"": ""BOTH"",
+        ""stopPrice"": ""0.0855"",
+        ""workingType"": ""CONTRACT_PRICE"",
+        ""priceProtect"": true,
+        ""origType"": ""STOP"",
+        ""selfTradePreventionMode"": ""EXPIRE_MAKER"",
+        ""time"": 1772568376819,
+        ""updateTime"": 1772568376819,
+        ""priceMatch"": ""NONE""
+    }", "5834896554");
             }
         }
 
@@ -269,8 +377,12 @@ namespace QuantConnect.Brokerages.Binance.Tests
             {
                 case OrderType.FutureAlgoStopLimit:
                 case OrderType.SpotStopLimit:
+                case OrderType.FutureCoinStopLimit:
                     Assert.Greater(raw.StopPrice, 0);
                     Assert.Greater(raw.Price, 0);
+                    break;
+                case OrderType.FutureCoinStopMarket:
+                    Assert.Greater(raw.StopPrice, 0);
                     break;
             }
         }
@@ -529,6 +641,138 @@ namespace QuantConnect.Brokerages.Binance.Tests
         ""V"": ""EXPIRE_MAKER""
     }
 }", "1281704667");
+
+                yield return new OrderResponse(OrderType.FutureCoinMarket, @"{
+    ""e"": ""ORDER_TRADE_UPDATE"",
+    ""T"": 1772573412996,
+    ""E"": 1772573412996,
+    ""i"": ""FzAusRuXAuoCFzSg"",
+    ""o"": {
+        ""s"": ""SANDUSD_PERP"",
+        ""c"": ""web_usdt_vtdcx4sv95iwl5mf9ju6zx7"",
+        ""S"": ""BUY"",
+        ""o"": ""MARKET"",
+        ""f"": ""GTC"",
+        ""q"": ""1"",
+        ""p"": ""0"",
+        ""ap"": ""0.0836"",
+        ""sp"": ""0"",
+        ""x"": ""TRADE"",
+        ""X"": ""FILLED"",
+        ""i"": 5834939854,
+        ""l"": ""1"",
+        ""z"": ""1"",
+        ""L"": ""0.0836"",
+        ""n"": ""0.05980861"",
+        ""N"": ""SAND"",
+        ""T"": 1772573412996,
+        ""t"": 52897735,
+        ""b"": ""0"",
+        ""a"": ""0"",
+        ""m"": false,
+        ""R"": false,
+        ""wt"": ""CONTRACT_PRICE"",
+        ""ot"": ""MARKET"",
+        ""ps"": ""BOTH"",
+        ""cp"": false,
+        ""ma"": ""SAND"",
+        ""rp"": ""0"",
+        ""pP"": false,
+        ""si"": 0,
+        ""ss"": 0,
+        ""V"": ""EXPIRE_MAKER"",
+        ""pm"": ""NONE"",
+        ""er"": ""0""
+    }
+}", "5834939854");
+
+                yield return new OrderResponse(OrderType.FutureCoinStopMarket, @"{
+    ""e"": ""ORDER_TRADE_UPDATE"",
+    ""T"": 1772573616997,
+    ""E"": 1772573616998,
+    ""i"": ""FzAusRuXAuoCFzSg"",
+    ""o"": {
+        ""s"": ""SANDUSD_PERP"",
+        ""c"": ""web_usdt_bbtxn67bpvyjpsqpsnlpdci"",
+        ""S"": ""SELL"",
+        ""o"": ""LIMIT"",
+        ""f"": ""GTC"",
+        ""q"": ""1"",
+        ""p"": ""0.0836"",
+        ""ap"": ""0.0836"",
+        ""sp"": ""0"",
+        ""x"": ""TRADE"",
+        ""X"": ""FILLED"",
+        ""i"": 5834940971,
+        ""l"": ""1"",
+        ""z"": ""1"",
+        ""L"": ""0.0836"",
+        ""n"": ""0.02392344"",
+        ""N"": ""SAND"",
+        ""T"": 1772573616997,
+        ""t"": 52897740,
+        ""b"": ""0"",
+        ""a"": ""0"",
+        ""m"": true,
+        ""R"": false,
+        ""wt"": ""CONTRACT_PRICE"",
+        ""ot"": ""LIMIT"",
+        ""ps"": ""BOTH"",
+        ""cp"": false,
+        ""ma"": ""SAND"",
+        ""rp"": ""0"",
+        ""pP"": false,
+        ""si"": 0,
+        ""ss"": 0,
+        ""V"": ""EXPIRE_MAKER"",
+        ""pm"": ""NONE"",
+        ""er"": ""0""
+    }
+}", "5834940971");
+
+                yield return new OrderResponse(OrderType.FutureCoinStopMarket, @"{
+    ""e"": ""ORDER_TRADE_UPDATE"",
+    ""T"": 1772573992256,
+    ""E"": 1772573992257,
+    ""i"": ""FzAusRuXAuoCFzSg"",
+    ""o"": {
+        ""s"": ""SANDUSD_PERP"",
+        ""c"": ""web_usdt_qvncdefuaj9gkbmejzhik7n"",
+        ""S"": ""BUY"",
+        ""o"": ""MARKET"",
+        ""f"": ""GTC"",
+        ""q"": ""1"",
+        ""p"": ""0"",
+        ""ap"": ""0.0836"",
+        ""sp"": ""0.0836"",
+        ""x"": ""TRADE"",
+        ""X"": ""FILLED"",
+        ""i"": 5834942621,
+        ""l"": ""1"",
+        ""z"": ""1"",
+        ""L"": ""0.0836"",
+        ""n"": ""0.05980861"",
+        ""N"": ""SAND"",
+        ""T"": 1772573992256,
+        ""t"": 52897763,
+        ""b"": ""0"",
+        ""a"": ""0"",
+        ""m"": false,
+        ""R"": false,
+        ""wt"": ""CONTRACT_PRICE"",
+        ""ot"": ""TAKE_PROFIT_MARKET"",
+        ""ps"": ""BOTH"",
+        ""cp"": false,
+        ""ma"": ""SAND"",
+        ""rp"": ""0"",
+        ""pP"": false,
+        ""si"": 0,
+        ""ss"": 0,
+        ""V"": ""EXPIRE_MAKER"",
+        ""pm"": ""NONE"",
+        ""er"": ""0""
+    }
+}", "5834942621");
             }
         }
 
@@ -692,6 +936,10 @@ namespace QuantConnect.Brokerages.Binance.Tests
             FutureAlgoStopLimit,
             FutureAlgoStopMarket,
             NewApiSpotMarket,
+            FutureCoinMarket,
+            FutureCoinLimit,
+            FutureCoinStopMarket,
+            FutureCoinStopLimit
         }
 
         [Test]
