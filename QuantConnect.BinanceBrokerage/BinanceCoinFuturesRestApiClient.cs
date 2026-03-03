@@ -68,5 +68,14 @@ namespace QuantConnect.Brokerages.Binance
         {
             return GetCashBalance(_prefix);
         }
+
+        /// <summary>
+        /// Gets all orders not yet closed
+        /// </summary>
+        /// <returns>All open orders</returns>
+        public override IEnumerable<OpenOrder> GetOpenOrders()
+        {
+            return GetOpenOrders("openOrders");
+        }
     }
 }
