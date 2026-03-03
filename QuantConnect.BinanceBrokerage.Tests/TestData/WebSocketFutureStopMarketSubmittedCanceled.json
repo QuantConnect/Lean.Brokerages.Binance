@@ -1,0 +1,56 @@
+{
+    "e": "ALGO_UPDATE",
+    "T": 1772477117723,
+    "E": 1772477117723,
+    "o": {
+        "caid": "LIw9d2o1etTkTwhR7lHGwa",
+        "aid": 2000000548906329,
+        "at": "CONDITIONAL",
+        "o": "STOP_MARKET",
+        "s": "ACHUSDT",
+        "S": "BUY",
+        "ps": "BOTH",
+        "f": "GTC",
+        "q": "800",
+        "X": "NEW",
+        "ai": "",
+        "tp": "0.006847",
+        "p": "0",
+        "V": "EXPIRE_MAKER",
+        "wt": "CONTRACT_PRICE",
+        "pm": "NONE",
+        "cp": false,
+        "pP": false,
+        "R": false,
+        "tt": 0,
+        "gtd": 0
+    }
+}
+{
+    "e": "ALGO_UPDATE",
+    "T": 1772477130697,
+    "E": 1772477130698,
+    "o": {
+        "caid": "LIw9d2o1etTkTwhR7lHGwa",
+        "aid": 2000000548906329,
+        "at": "CONDITIONAL",
+        "o": "STOP_MARKET",
+        "s": "ACHUSDT",
+        "S": "BUY",
+        "ps": "BOTH",
+        "f": "GTC",
+        "q": "800",
+        "X": "CANCELED",
+        "ai": "",
+        "tp": "0.006847",
+        "p": "0",
+        "V": "EXPIRE_MAKER",
+        "wt": "CONTRACT_PRICE",
+        "pm": "NONE",
+        "cp": false,
+        "pP": false,
+        "R": false,
+        "tt": 0,
+        "gtd": 0
+    }
+}

@@ -234,50 +234,62 @@ namespace QuantConnect.Brokerages.Binance
             List<Order> list = new List<Order>();
             foreach (var item in orders)
             {
-                var orderQuantity = item.Quantity;
-                var orderLeanSymbol = _symbolMapper.GetLeanSymbol(item.Symbol, GetSupportedSecurityType(), MarketName);
-                var orderTime = Time.UnixMillisecondTimeStampToDateTime(item.Time);
-
-                Order order;
-                switch (item.Type.LazyToUpper())
+                if (TryCreateLeanOrder(item, out var order))
                 {
-                    case "MARKET":
-                        order = new MarketOrder(orderLeanSymbol, orderQuantity, orderTime);
-                        break;
-
-                    case "LIMIT":
-                    case "LIMIT_MAKER":
-                        order = new LimitOrder(orderLeanSymbol, orderQuantity, item.Price, orderTime);
-                        break;
-
-                    case "STOP_LOSS":
-                    case "TAKE_PROFIT" when orderLeanSymbol.SecurityType == SecurityType.Crypto:
-                        order = new StopMarketOrder(orderLeanSymbol, orderQuantity, item.StopPrice, orderTime);
-                        break;
-
-                    case "STOP_LOSS_LIMIT":
-                    case "TAKE_PROFIT_LIMIT":
-                    case "STOP" or "TAKE_PROFIT" when orderLeanSymbol.SecurityType == SecurityType.CryptoFuture:
-                        order = new StopLimitOrder(orderLeanSymbol, orderQuantity, item.StopPrice, item.Price, orderTime);
-                        break;
-
-                    case "STOP_MARKET":
-                        order = new StopMarketOrder(orderLeanSymbol, orderQuantity, item.StopPrice, orderTime);
-                        break;
-
-                    default:
-                        OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
-                            "BinanceBrokerage.GetOpenOrders: Unsupported order type returned from brokerage: " + item.Type));
-                        continue;
+                    list.Add(order);
                 }
-
-                order.BrokerId.Add(item.Id);
-                order.Status = ConvertOrderStatus(item.Status);
-
-                list.Add(order);
             }
 
             return list;
+        }
+
+        /// <summary>
+        /// Attempts to create a Lean <see cref="Order"/> from a Binance <see cref="Messages.OpenOrder"/>.
+        /// Sets <see cref="Order.BrokerId"/> on success.
+        /// Returns <c>false</c> for unsupported order types.
+        /// </summary>
+        internal bool TryCreateLeanOrder(Messages.OpenOrder item, out Order order)
+        {
+            var orderQuantity = item.Quantity;
+            var orderLeanSymbol = _symbolMapper.GetLeanSymbol(item.Symbol, GetSupportedSecurityType(), MarketName);
+            var orderTime = Time.UnixMillisecondTimeStampToDateTime(item.Time);
+
+            switch (item.Type.LazyToUpper())
+            {
+                case "MARKET":
+                    order = new MarketOrder(orderLeanSymbol, orderQuantity, orderTime);
+                    break;
+
+                case "LIMIT":
+                case "LIMIT_MAKER":
+                    order = new LimitOrder(orderLeanSymbol, orderQuantity, item.Price, orderTime);
+                    break;
+
+                case "STOP_LOSS":
+                case "TAKE_PROFIT" when orderLeanSymbol.SecurityType == SecurityType.Crypto:
+                    order = new StopMarketOrder(orderLeanSymbol, orderQuantity, item.StopPrice, orderTime);
+                    break;
+
+                case "STOP_LOSS_LIMIT":
+                case "TAKE_PROFIT_LIMIT":
+                case "STOP" or "TAKE_PROFIT" when orderLeanSymbol.SecurityType == SecurityType.CryptoFuture:
+                    order = new StopLimitOrder(orderLeanSymbol, orderQuantity, item.StopPrice, item.Price, orderTime);
+                    break;
+
+                case "STOP_MARKET":
+                    order = new StopMarketOrder(orderLeanSymbol, orderQuantity, item.StopPrice, orderTime);
+                    break;
+
+                default:
+                    order = null;
+                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Error, -1,
+                        "BinanceBrokerage.GetOpenOrders: Unsupported order type returned from brokerage: " + item.Type));
+                    return false;
+            }
+
+            order.BrokerId.Add(item.Id);
+            order.Status = ConvertOrderStatus(item.Status);
+            return true;
         }
 
         /// <summary>

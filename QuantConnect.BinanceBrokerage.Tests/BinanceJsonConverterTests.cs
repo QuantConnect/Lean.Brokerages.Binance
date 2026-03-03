@@ -14,17 +14,35 @@
 */
 
 using System;
+using System.Linq;
 using Newtonsoft.Json;
 using NUnit.Framework;
+using QuantConnect.Orders;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using QuantConnect.Brokerages.Binance.Messages;
+using QuantConnect.Brokerages.Binance.Extensions;
+using QuantConnect.Brokerages.Binance.Enums;
 
 namespace QuantConnect.Brokerages.Binance.Tests
 {
     [TestFixture]
     public class BinanceJsonConverterTests
     {
+        private BinanceBrokerage _brokerage;
+
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            _brokerage = new BinanceBrokerage("", "", "", "", "", null, null, null);
+        }
+
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
+        {
+            _brokerage.Dispose();
+        }
+
         private static IEnumerable<OrderResponse> PlaceOrderResponses
         {
             get
@@ -783,10 +801,9 @@ namespace QuantConnect.Brokerages.Binance.Tests
 
             var objData = JObject.Parse(message);
 
-            Assert.IsTrue(BinanceBrokerage.TryGetExecution(objData, out var execution));
+            Assert.IsTrue(BinanceBrokerage.TryGetExecution(objData, out var execution, out var action));
 
-            Assert.IsTrue(execution.ExecutionType.Equals("TRADE", StringComparison.OrdinalIgnoreCase)
-                || execution.ExecutionType.Equals("EXPIRED", StringComparison.OrdinalIgnoreCase));
+            Assert.AreEqual(ExecutionAction.Fill, action);
 
             Assert.IsFalse(string.IsNullOrEmpty(execution.OrderId));
             Assert.AreEqual(expectedOrderId, execution.OrderId);
@@ -799,6 +816,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
             Assert.IsFalse(string.IsNullOrEmpty(execution.FeeCurrency));
             Assert.Greater(execution.Fee, 0);
             Assert.IsFalse(string.IsNullOrEmpty(execution.OrderStatus));
+            Assert.Greater(execution.OriginalAmount, 0);
 
             switch (orderType)
             {
@@ -812,6 +830,59 @@ namespace QuantConnect.Brokerages.Binance.Tests
                     break;
                 default:
                     Assert.IsTrue(execution.AlgoOrderId.Equals("0", StringComparison.InvariantCultureIgnoreCase));
+                    break;
+            }
+        }
+
+        [TestCaseSource(nameof(OrderWebSocketMessages))]
+        public void MappingWebSocketOrderMessageToLeanOrder(OrderResponse response)
+        {
+            var (_, message, expectedOrderId) = response;
+
+            var objData = JObject.Parse(message);
+
+            Assert.IsTrue(BinanceBrokerage.TryGetExecution(objData, out var execution, out _));
+
+            // Step 1: Map Execution => OpenOrder (Binance DTO)
+            var openOrder = execution.MapExecutionToOpenOrder();
+
+            Assert.IsNotNull(openOrder);
+            Assert.AreEqual(expectedOrderId, openOrder.Id);
+            Assert.IsFalse(string.IsNullOrEmpty(openOrder.Type), "OpenOrder.Type must be populated for all WS messages");
+
+            // Step 2: OpenOrder => Lean Order
+            Assert.IsTrue(_brokerage.TryCreateLeanOrder(openOrder, out var order), $"TryCreateLeanOrder failed for order type '{openOrder.Type}'");
+
+            Assert.AreEqual(expectedOrderId, order.BrokerId.Single());
+            Assert.That(order.Time, Is.GreaterThan(DateTime.MinValue));
+
+            // All test messages use side BUY => positive quantity
+            Assert.Greater(order.Quantity, 0);
+
+            switch (openOrder.Type.ToUpperInvariant())
+            {
+                case "MARKET":
+                    Assert.IsInstanceOf<MarketOrder>(order);
+                    break;
+
+                case "LIMIT":
+                case "LIMIT_MAKER":
+                    Assert.IsInstanceOf<LimitOrder>(order);
+                    Assert.Greater(((LimitOrder)order).LimitPrice, 0);
+                    break;
+
+                case "STOP_LOSS":
+                case "STOP_MARKET":
+                    Assert.IsInstanceOf<StopMarketOrder>(order);
+                    Assert.Greater(((StopMarketOrder)order).StopPrice, 0);
+                    break;
+
+                case "STOP_LOSS_LIMIT":
+                case "TAKE_PROFIT_LIMIT":
+                case "STOP":
+                    Assert.IsInstanceOf<StopLimitOrder>(order);
+                    Assert.Greater(((StopLimitOrder)order).StopPrice, 0);
+                    Assert.Greater(((StopLimitOrder)order).LimitPrice, 0);
                     break;
             }
         }
@@ -917,7 +988,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
         {
             var objData = JObject.Parse(message);
 
-            Assert.IsFalse(BinanceBrokerage.TryGetExecution(objData, out var execution));
+            Assert.IsFalse(BinanceBrokerage.TryGetExecution(objData, out var execution, out _));
         }
 
 
