@@ -17,6 +17,7 @@ using QuantConnect.Securities;
 using System.Collections.Generic;
 using QuantConnect.Brokerages.Binance.Messages;
 using QuantConnect.Util;
+using QuantConnect.Orders;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -67,6 +68,46 @@ namespace QuantConnect.Brokerages.Binance
         public override BalanceEntry[] GetCashBalance()
         {
             return GetCashBalance(_prefix);
+        }
+
+        /// <summary>
+        /// Gets all orders not yet closed
+        /// </summary>
+        /// <returns>All open orders</returns>
+        public override IEnumerable<OpenOrder> GetOpenOrders()
+        {
+            return GetOpenOrders("openOrders");
+        }
+
+        /// <summary>
+        /// Resolves the REST endpoint used to place an order
+        /// </summary>
+        /// <param name="orderType">The type of order being placed.</param>
+        /// <returns>
+        /// The endpoint path used for placing the order.
+        /// </returns>
+        protected override string ResolveOrderEndpoint(OrderType orderType)
+        {
+            return "order";
+        }
+
+        /// <summary>
+        /// Create new order body payload
+        /// </summary>
+        /// <param name="order">Lean order</param>
+        /// <returns>The payload</returns>
+        protected override IDictionary<string, object> CreateOrderBody(Orders.Order order)
+        {
+            return CreateOrderBodyCore(order);
+        }
+
+        /// <summary>
+        /// Creates cancel request payloads for orders.
+        /// </summary>
+        /// <param name="brokerageIds">The brokerage order identifiers.</param>
+        protected override IEnumerable<IDictionary<string, object>> CreateCancelOrderBody(Orders.Order order)
+        {
+            return CreateCancelOrderBodyCore(order);
         }
     }
 }
