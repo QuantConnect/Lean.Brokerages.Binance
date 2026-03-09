@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using QuantConnect.Configuration;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Tests.Common.Securities;
+using QuantConnect.Brokerages.Binance.Enums;
 
 namespace QuantConnect.Brokerages.Binance.Tests
 {
@@ -155,5 +156,27 @@ namespace QuantConnect.Brokerages.Binance.Tests
 
         public readonly record struct ExchangeInfo(IReadOnlyCollection<RateLimit> RateLimits);
         public readonly record struct RateLimit(string RateLimitType, string Interval, int IntervalNum, int Limit);
+
+        private const string SpotDataWsUrl = "wss://stream.binance.com:9443/ws";
+        private const string SpotOrderWsUrl = "wss://ws-api.binance.com:9443/ws-api/v3";
+        private const string FuturesWsUrl = "wss://fstream.binance.com/ws";
+        private const string CoinFuturesWsUrl = "wss://dstream.binance.com/ws";
+        private const string BinanceUSWsUrl = "wss://stream.binance.us:9443/ws";
+
+        [TestCase(SpotDataWsUrl, SpotOrderWsUrl, AccountType.Cash, ExpectedResult = BinanceConnectionMode.WsApiSignature)]
+        [TestCase(SpotDataWsUrl, SpotOrderWsUrl, AccountType.Margin, ExpectedResult = BinanceConnectionMode.CrossMarginToken)]
+        [TestCase(SpotDataWsUrl, SpotOrderWsUrl, null, ExpectedResult = BinanceConnectionMode.WsApiSignature)]
+        [TestCase(SpotDataWsUrl, "", AccountType.Cash, ExpectedResult = BinanceConnectionMode.StandardListenKey)]
+        [TestCase(SpotDataWsUrl, null, AccountType.Cash, ExpectedResult = BinanceConnectionMode.StandardListenKey)]
+        [TestCase(FuturesWsUrl, FuturesWsUrl, AccountType.Margin, ExpectedResult = BinanceConnectionMode.StandardListenKey)]
+        [TestCase(FuturesWsUrl, FuturesWsUrl, AccountType.Cash, ExpectedResult = BinanceConnectionMode.StandardListenKey)]
+        [TestCase(CoinFuturesWsUrl, CoinFuturesWsUrl, AccountType.Margin, ExpectedResult = BinanceConnectionMode.StandardListenKey)]
+        [TestCase(CoinFuturesWsUrl, CoinFuturesWsUrl, AccountType.Cash, ExpectedResult = BinanceConnectionMode.StandardListenKey)]
+        [TestCase(BinanceUSWsUrl, null, AccountType.Cash, ExpectedResult = BinanceConnectionMode.StandardListenKey)]
+        [TestCase(BinanceUSWsUrl, null, AccountType.Margin, ExpectedResult = BinanceConnectionMode.StandardListenKey)]
+        public BinanceConnectionMode DetermineConnectionModeTests(string dataWsUrl, string orderWsUrl, AccountType? accountType)
+        {
+            return BinanceBrokerage.DetermineConnectionMode(dataWsUrl, orderWsUrl, accountType);
+        }
     }
 }
