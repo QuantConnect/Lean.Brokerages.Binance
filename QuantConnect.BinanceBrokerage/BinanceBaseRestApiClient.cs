@@ -548,7 +548,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <summary>
         /// Start user data stream
         /// </summary>
-        public virtual void CreateListenKey()
+        public virtual string CreateListenKey()
         {
             var request = new RestRequest(UserDataStreamEndpoint, Method.POST);
             request.AddHeader(KeyHeader, ApiKey);
@@ -562,8 +562,16 @@ namespace QuantConnect.Brokerages.Binance
             var content = JObject.Parse(response.Content);
             lock (_listenKeyLocker)
             {
-                SessionId = content.Value<string>("listenKey");
+                // BinanceCrossMargin use 'token' instead of 'listenKey' for the session id
+                SessionId = content.Value<string>("listenKey") ?? content.Value<string>("token");
             }
+
+            if (string.IsNullOrEmpty(SessionId))
+            {
+                throw new Exception($"BinanceBrokerage.StartSession: listenKey wasn't allocated or has been refused. Response content: {response.Content}");
+            }
+
+            return SessionId;
         }
 
         /// <summary>

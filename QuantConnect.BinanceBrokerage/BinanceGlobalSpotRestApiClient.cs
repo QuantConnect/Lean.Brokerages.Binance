@@ -24,9 +24,10 @@ namespace QuantConnect.Brokerages.Binance
         {
         }
 
-        public override void CreateListenKey()
+        public override string CreateListenKey()
         {
             // Not used for global (cash/margin) spot 
+            return null;
         }
 
         public override bool SessionKeepAlive()

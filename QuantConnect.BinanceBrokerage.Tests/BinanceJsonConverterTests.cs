@@ -1042,5 +1042,31 @@ namespace QuantConnect.Brokerages.Binance.Tests
             Assert.IsFalse(string.IsNullOrEmpty(@params.Value<string>("signature")), "'signature' value is incorrect.");
             Assert.AreNotEqual(0, @params.Value<long>("timestamp"), "'timestamp' value is incorrect.");
         }
+
+        [Test]
+        public void SerializeSubscribeListenTokenRequestShouldContainCorrectCamelCaseFields()
+        {
+            var listenKey = "abc123";
+
+            var request = new SubscribeListenToken(listenKey);
+
+            var json = request.ToJson();
+
+            Assert.IsNotEmpty(json, "Serialized JSON should not be empty.");
+
+            var obj = JObject.Parse(json);
+
+            Assert.IsTrue(Guid.TryParse(obj.Value<string>("id"), out _), "'id' should be a valid GUID.");
+            Assert.AreEqual("userDataStream.subscribe.listenToken", obj.Value<string>("method"), "'method' field is incorrect.");
+
+            var @params = obj["params"] as JObject;
+
+            var expectedKeys = new[] { "listenToken" };
+            foreach (var key in expectedKeys)
+            {
+                Assert.IsTrue(@params.ContainsKey(key), $"Param '{key}' is missing or not camelCase.");
+            }
+            Assert.AreEqual(listenKey, @params.Value<string>("listenToken"), "'listenToken' value is incorrect.");
+        }
     }
 }

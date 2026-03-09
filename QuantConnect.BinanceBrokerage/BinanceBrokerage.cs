@@ -37,6 +37,7 @@ using QuantConnect.Api;
 using RestSharp;
 using Timer = System.Timers.Timer;
 using QuantConnect.Brokerages.Binance.Constants;
+using QuantConnect.Brokerages.Binance.Enums;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("QuantConnect.Brokerages.Binance.Tests")]
@@ -74,10 +75,16 @@ namespace QuantConnect.Brokerages.Binance
         private const int MaximumSymbolsPerConnection = 512;
 
         /// <summary>
-        /// Indicates whether the WebSocket connection uses the WS-API endpoint 
-        /// that does not require a listen key (v3 API).
+        /// Identifies how the user data WebSocket stream is authenticated and maintained.
         /// </summary>
-        private bool _isWsApiEndpointWithoutListenKey;
+        private BinanceConnectionMode _connectionMode;
+
+        /// <summary>
+        /// Listen key for authenticating Binance user data stream websocket sessions
+        /// used to receive order updates across all account types
+        /// (US, Futures, Coin Futures, Margin, and Cross Margin).
+        /// </summary>
+        private string _listenKey;
 
         protected BinanceBaseRestApiClient ApiClient => _apiClientLazy?.Value;
         protected string MarketName { get; set; }
@@ -577,7 +584,6 @@ namespace QuantConnect.Brokerages.Binance
             _algorithm = algorithm;
             _aggregator = aggregator;
             _webSocketBaseUrl = orderWsUrl;
-            _isWsApiEndpointWithoutListenKey = !string.IsNullOrEmpty(orderWsUrl) && !dataWsUrl.Equals(orderWsUrl, StringComparison.OrdinalIgnoreCase);
             _messageHandler = new BrokerageConcurrentMessageHandler<WebSocketMessage>(OnUserMessage, ConcurrencyEnabled);
             _symbolMapper = new(marketName);
             MarketName = marketName;
@@ -606,6 +612,8 @@ namespace QuantConnect.Brokerages.Binance
                 // and user brokerage choise is actually applied
                 _apiClientLazy = new Lazy<BinanceBaseRestApiClient>(() =>
                 {
+                    // Determine the connection mode in lazy mode because the algorithm has been initialized, and use the correct account type from the brokerage model.
+                    _connectionMode = DetermineConnectionMode(dataWsUrl, orderWsUrl, _algorithm?.BrokerageModel.AccountType);
                     var apiClient = GetApiClient(_symbolMapper, _algorithm?.Portfolio, restApiUrl, apiKey, apiSecret, _webApiRateLimiter);
 
                     apiClient.OrderSubmit += (s, e) => OnOrderSubmit(e);
@@ -613,10 +621,24 @@ namespace QuantConnect.Brokerages.Binance
                     apiClient.Message += (s, e) => OnMessage(e);
 
                     // once we know the api endpoint we can subscribe to user data stream
-                    if (!_isWsApiEndpointWithoutListenKey)
+                    if (_connectionMode != BinanceConnectionMode.WsApiSignature)
                     {
-                        apiClient.CreateListenKey();
-                        _keepAliveTimer.Elapsed += (s, e) => apiClient.SessionKeepAlive();
+                        if (_connectionMode == BinanceConnectionMode.CrossMarginToken)
+                        {
+                            // https://developers.binance.com/docs/margin_trading/trade-data-stream#description
+                            _keepAliveTimer.Interval = 60 * 1000; // Margin account listen keys are valid for 24 hours, same as spot trading
+                        }
+                        _listenKey = apiClient.CreateListenKey();
+                        _keepAliveTimer.Elapsed += (s, e) =>
+                        {
+                            apiClient.SessionKeepAlive();
+                            // Use for BinanceCrossMargin because it uses the same endpoint as spot trading but still requires a listen key for user data stream
+                            if (_connectionMode == BinanceConnectionMode.CrossMarginToken)
+                            {
+                                Log.Trace($"{nameof(BinanceBrokerage)}.{nameof(Initialize)}.KeepAlive: The session token was updated and send.");
+                                WebSocket.Send(new Messages.SubscribeListenToken(apiClient.SessionId).ToJson());
+                            }
+                        };
                     }
 
                     Connect(apiClient.SessionId);
@@ -636,7 +658,11 @@ namespace QuantConnect.Brokerages.Binance
             WebSocket.Open += (s, e) =>
             {
                 _keepAliveTimer.Start();
-                if (_isWsApiEndpointWithoutListenKey)
+                if (_connectionMode == BinanceConnectionMode.CrossMarginToken)
+                {
+                    WebSocket.Send(new Messages.SubscribeListenToken(_listenKey).ToJson());
+                }
+                else if (_connectionMode == BinanceConnectionMode.WsApiSignature)
                 {
                     WebSocket.Send(new Messages.SubscribeSignature(ApiKey, ApiSecret).ToJson());
                 }
@@ -665,13 +691,33 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
+        /// Determines the WebSocket connection mode based on the provided URLs and account type.
+        /// </summary>
+        /// <param name="dataWsUrl">The WebSocket URL used for market data streaming.</param>
+        /// <param name="orderWsUrl">The WebSocket URL used for order management.</param>
+        /// <param name="accountType">The brokerage account type, or null if unavailable.</param>
+        /// <returns>The <see cref="BinanceConnectionMode"/> that matches the given configuration.</returns>
+        internal static BinanceConnectionMode DetermineConnectionMode(string dataWsUrl, string orderWsUrl, AccountType? accountType)
+        {
+            if (!string.IsNullOrEmpty(orderWsUrl) &&
+                !dataWsUrl.Equals(orderWsUrl, StringComparison.OrdinalIgnoreCase))
+            {
+                return accountType == AccountType.Margin
+                    ? BinanceConnectionMode.CrossMarginToken
+                    : BinanceConnectionMode.WsApiSignature;
+            }
+
+            return BinanceConnectionMode.StandardListenKey;
+        }
+
+        /// <summary>
         /// Get's the appropiate API client to use
         /// </summary>
         protected virtual BinanceBaseRestApiClient GetApiClient(ISymbolMapper symbolMapper, ISecurityProvider securityProvider,
             string restApiUrl, string apiKey, string apiSecret, RateGate rateGate)
         {
             restApiUrl ??= Config.Get("binance-api-url", "https://api.binance.com");
-            if (_algorithm?.BrokerageModel.AccountType == AccountType.Margin)
+            if (_connectionMode == BinanceConnectionMode.CrossMarginToken)
             {
                 return new BinanceCrossMarginRestApiClient(symbolMapper, securityProvider, apiKey, apiSecret, restApiUrl, rateGate);
             }
@@ -812,7 +858,9 @@ namespace QuantConnect.Brokerages.Binance
 
             _reconnectTimer.Start();
 
-            var url = _isWsApiEndpointWithoutListenKey ? _webSocketBaseUrl : $"{_webSocketBaseUrl}/{sessionId}";
+            var url = _connectionMode == BinanceConnectionMode.StandardListenKey
+                ? $"{_webSocketBaseUrl}/{sessionId}"
+                : _webSocketBaseUrl;
             WebSocket.Initialize(url);
 
             ConnectSync();

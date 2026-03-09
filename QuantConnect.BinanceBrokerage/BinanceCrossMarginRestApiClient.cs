@@ -25,7 +25,7 @@ namespace QuantConnect.Brokerages.Binance
     /// <summary>
     /// Binance Cross Margin REST API implementation
     /// </summary>
-    public class BinanceCrossMarginRestApiClient : BinanceGlobalSpotRestApiClient
+    public class BinanceCrossMarginRestApiClient : BinanceBaseRestApiClient
     {
         /// <summary>
         /// The Api prefix
@@ -43,6 +43,11 @@ namespace QuantConnect.Brokerages.Binance
         /// Ticker Price Change Statistics Endpoint
         /// </summary>
         protected override string TickerPriceChangeStatisticsEndpoint => "/api/v3/ticker/24hr";
+
+        /// <summary>
+        /// The user data stream endpoint
+        /// </summary>
+        protected override string UserDataStreamEndpoint => $"{WsPrefix}/userListenToken";
 
         /// <summary>
         /// Creates a new instance
@@ -68,6 +73,18 @@ namespace QuantConnect.Brokerages.Binance
             body["sideEffectType"] = "MARGIN_BUY";
 
             return body;
+        }
+
+        public override bool SessionKeepAlive()
+        {
+            // Not used for global (cash/margin) spot
+            _ = CreateListenKey();
+            return true;
+        }
+
+        public override void StopSession()
+        {
+            // Not used for global (cash/margin) spot
         }
     }
 }

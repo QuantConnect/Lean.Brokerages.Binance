@@ -13,27 +13,19 @@
  * limitations under the License.
 */
 
-using QuantConnect.Brokerages.Binance.Extensions;
-
 namespace QuantConnect.Brokerages.Binance.Messages
 {
-    public class SubscribeSignature : BaseSubscribe
+    public class SubscribeListenToken : BaseSubscribe
     {
         /// <summary>
-        /// Create instance of the subscribe signature request with the necessary authentication parameters.
+        /// Create instance of the subscribe by listen token request.
         /// </summary>
-        /// <param name="apiKey">The api key.</param>
-        /// <param name="apiSecret">The api secret.</param>
-        public SubscribeSignature(string apiKey, string apiSecret) : base("userDataStream.subscribe.signature")
+        /// <param name="listenToken">The generated token with using endpoint: '/sapi/v1/userListenToken'</param>
+        public SubscribeListenToken(string listenToken) : base("userDataStream.subscribe.listenToken")
         {
-            var timestamp = BinanceExtensions.GetNonce();
-            var signature = BinanceExtensions.GetAuthenticationToken(apiSecret, payload: $"apiKey={apiKey}&timestamp={timestamp}");
-
             Params = new
             {
-                apiKey,
-                signature,
-                timestamp
+                listenToken
             };
         }
     }
