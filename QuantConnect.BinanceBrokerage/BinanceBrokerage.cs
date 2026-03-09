@@ -626,7 +626,7 @@ namespace QuantConnect.Brokerages.Binance
                         if (_connectionMode == BinanceConnectionMode.CrossMarginToken)
                         {
                             // https://developers.binance.com/docs/margin_trading/trade-data-stream#description
-                            _keepAliveTimer.Interval = 60 * 1000; // Margin account listen keys are valid for 24 hours, same as spot trading
+                            _keepAliveTimer.Interval = 23.5 * 60 * 60 * 1000; // Margin account listen keys are valid for 24 hours, same as spot trading
                         }
                         _listenKey = apiClient.CreateListenKey();
                         _keepAliveTimer.Elapsed += (s, e) =>
