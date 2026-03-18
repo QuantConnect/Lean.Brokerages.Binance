@@ -79,12 +79,21 @@ namespace QuantConnect.Brokerages.Binance
         /// </summary>
         private BinanceConnectionMode _connectionMode;
 
+        private string _listenKey;
         /// <summary>
         /// Listen key for authenticating Binance user data stream websocket sessions
         /// used to receive order updates across all account types
         /// (US, Futures, Coin Futures, Margin, and Cross Margin).
         /// </summary>
-        private string _listenKey;
+        private string ListenKey
+        {
+            get => _listenKey;
+            set
+            {
+                _listenKey = value;
+                Log.Trace($"{nameof(BinanceBrokerage)}: Listen key was updated.");
+            }
+        }
 
         protected BinanceBaseRestApiClient ApiClient => _apiClientLazy?.Value;
         protected string MarketName { get; set; }
@@ -186,7 +195,7 @@ namespace QuantConnect.Brokerages.Binance
             // WebSocket is  responsible for Binance UserData stream only
             // as a result we don't need to connect user data stream if BinanceBrokerage is used as DQH only
             // or until Algorithm is actually initialized
-            _listenKey = ApiClient.CreateListenKey();
+            ListenKey = ApiClient.CreateListenKey();
             Connect(ApiClient.SessionId);
         }
 
@@ -628,7 +637,7 @@ namespace QuantConnect.Brokerages.Binance
                             // https://developers.binance.com/docs/margin_trading/trade-data-stream#description
                             _keepAliveTimer.Interval = 23.5 * 60 * 60 * 1000; // Margin account listen keys are valid for 24 hours, same as spot trading
                         }
-                        _listenKey = apiClient.CreateListenKey();
+                        ListenKey = apiClient.CreateListenKey();
                         _keepAliveTimer.Elapsed += (s, e) =>
                         {
                             apiClient.SessionKeepAlive();
@@ -636,9 +645,8 @@ namespace QuantConnect.Brokerages.Binance
                             if (_connectionMode == BinanceConnectionMode.CrossMarginToken)
                             {
                                 // SessionKeepAlive() calls CreateListenKey() which produces a fresh token stored in apiClient.SessionId.
-                                // Sync _listenKey so that any subsequent WebSocket.Open sends the current valid token.
-                                _listenKey = apiClient.SessionId;
-                                Log.Trace($"{nameof(BinanceBrokerage)}.{nameof(Initialize)}.KeepAlive: The session token was updated and send.");
+                                // Sync ListenKey so that any subsequent WebSocket.Open sends the current valid token.
+                                ListenKey = apiClient.SessionId;
                                 WebSocket.Send(new Messages.SubscribeListenToken(apiClient.SessionId).ToJson());
                             }
                         };
@@ -663,7 +671,7 @@ namespace QuantConnect.Brokerages.Binance
                 _keepAliveTimer.Start();
                 if (_connectionMode == BinanceConnectionMode.CrossMarginToken)
                 {
-                    WebSocket.Send(new Messages.SubscribeListenToken(_listenKey).ToJson());
+                    WebSocket.Send(new Messages.SubscribeListenToken(ListenKey).ToJson());
                 }
                 else if (_connectionMode == BinanceConnectionMode.WsApiSignature)
                 {
