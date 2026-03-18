@@ -186,7 +186,7 @@ namespace QuantConnect.Brokerages.Binance
             // WebSocket is  responsible for Binance UserData stream only
             // as a result we don't need to connect user data stream if BinanceBrokerage is used as DQH only
             // or until Algorithm is actually initialized
-            ApiClient.CreateListenKey();
+            _listenKey = ApiClient.CreateListenKey();
             Connect(ApiClient.SessionId);
         }
 
@@ -635,6 +635,9 @@ namespace QuantConnect.Brokerages.Binance
                             // Use for BinanceCrossMargin because it uses the same endpoint as spot trading but still requires a listen key for user data stream
                             if (_connectionMode == BinanceConnectionMode.CrossMarginToken)
                             {
+                                // SessionKeepAlive() calls CreateListenKey() which produces a fresh token stored in apiClient.SessionId.
+                                // Sync _listenKey so that any subsequent WebSocket.Open sends the current valid token.
+                                _listenKey = apiClient.SessionId;
                                 Log.Trace($"{nameof(BinanceBrokerage)}.{nameof(Initialize)}.KeepAlive: The session token was updated and send.");
                                 WebSocket.Send(new Messages.SubscribeListenToken(apiClient.SessionId).ToJson());
                             }
