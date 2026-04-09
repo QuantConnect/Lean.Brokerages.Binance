@@ -39,7 +39,13 @@ namespace QuantConnect.Brokerages.Binance.Messages
     public class FutureBalance : BalanceEntry
     {
         public decimal WalletBalance { get; set; }
-        public override decimal Amount => WalletBalance;
+        public decimal AvailableBalance { get; set; }
+
+        // For BNFCR: Binance stores the total cross-margin available balance (all stablecoins
+        // aggregated, minus used margin) in availableBalance. walletBalance is the raw BNFCR
+        // token amount which can be negative for EU users (fees charged in BNFCR).
+        // For all other assets: walletBalance is correct.
+        public override decimal Amount => Asset == "BNFCR" ? AvailableBalance : WalletBalance;
     }
 #pragma warning restore 1591
 }
