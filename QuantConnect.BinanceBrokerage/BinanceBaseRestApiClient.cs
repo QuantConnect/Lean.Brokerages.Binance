@@ -190,7 +190,7 @@ namespace QuantConnect.Brokerages.Binance
             return JsonConvert
                 .DeserializeObject<AccountInformation>(response.Content, CreateAccountConverter())
                 .Balances
-                .Where(s => s.Amount != 0)
+                .Where(s => s.Amount != 0 || s.Asset.Equals("BNFCR", StringComparison.InvariantCultureIgnoreCase))
                 .ToArray();
         }
 
