@@ -226,6 +226,13 @@ namespace QuantConnect.Brokerages.Binance
             if (balances == null || !balances.Any())
                 return new List<CashAmount>();
 
+            if (balances.Any(b => b.Asset.Equals("BNFCR", StringComparison.InvariantCultureIgnoreCase)))
+            {
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "BinanceFuturesCreditsTradingMode",
+                    "Detected BNFCR in account balances — account is operating in MiCA Credits Trading Mode. " +
+                    "Margin handling will include supplementary stablecoin collateral (USDC, BNFCR, FDUSD, etc.)."));
+            }
+
             return balances
                 .Select(b => new CashAmount(b.Amount, b.Asset.LazyToUpper()))
                 .ToList();
