@@ -235,6 +235,13 @@ namespace QuantConnect.Brokerages.Binance
             if (balances == null || !balances.Any())
                 return new List<CashAmount>();
 
+            if (balances.Any(b => b.Asset.Equals("BNFCR", StringComparison.InvariantCultureIgnoreCase)))
+            {
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, "BinanceFuturesCreditsTradingMode",
+                    "Binance Futures Credits Trading Mode detected. " +
+                    "Margin will be calculated using all available collateral assets in the account."));
+            }
+
             return balances
                 .Select(b => new CashAmount(b.Amount, b.Asset.LazyToUpper()))
                 .ToList();
