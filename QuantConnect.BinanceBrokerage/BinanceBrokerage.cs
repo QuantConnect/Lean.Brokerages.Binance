@@ -607,18 +607,15 @@ namespace QuantConnect.Brokerages.Binance
             var maximumWebSocketConnections = Config.GetInt("binance-maximum-websocket-connections");
             var symbolWeights = maximumWebSocketConnections > 0 ? FetchSymbolWeights(restApiUrl) : null;
 
-            var subscriptionManager = new BrokerageMultiWebSocketSubscriptionManager(
+            SubscriptionManager = CreateSubscriptionManager(
                 dataWsUrl,
-                MaximumSymbolsPerConnection,
                 maximumWebSocketConnections,
                 symbolWeights,
-                () => new BinanceWebSocketWrapper(null),
-                Subscribe,
-                Unsubscribe,
-                OnDataMessage,
-                new TimeSpan(23, 45, 0));
-
-            SubscriptionManager = subscriptionManager;
+                MaximumSymbolsPerConnection,
+                _symbolMapper,
+                _webSocketRateLimiter,
+                GetNextRequestId,
+                OnDataMessage);
 
             // can be null, if BinanceBrokerage is used as DataQueueHandler only
             if (_algorithm != null)
@@ -745,6 +742,33 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
+        /// Creates the subscription manager used for market data WebSocket connections.
+        /// Override in derived brokerages to supply a specialised manager. The hook receives
+        /// every collaborator the manager may need so the base class can keep its members private.
+        /// </summary>
+        protected virtual DataQueueHandlerSubscriptionManager CreateSubscriptionManager(
+            string dataWsUrl,
+            int maximumWebSocketConnections,
+            Dictionary<Symbol, int> symbolWeights,
+            int maximumSymbolsPerConnection,
+            ISymbolMapper symbolMapper,
+            RateGate webSocketRateLimiter,
+            Func<long> getNextRequestId,
+            Action<WebSocketMessage> onDataMessage)
+        {
+            return new BrokerageMultiWebSocketSubscriptionManager(
+                dataWsUrl,
+                maximumSymbolsPerConnection,
+                maximumWebSocketConnections,
+                symbolWeights,
+                () => new BinanceWebSocketWrapper(null),
+                Subscribe,
+                Unsubscribe,
+                onDataMessage,
+                new TimeSpan(23, 45, 0));
+        }
+
+        /// <summary>
         /// Subscribes to the requested symbol (using an individual streaming channel)
         /// </summary>
         /// <param name="webSocket">The websocket instance</param>
@@ -752,19 +776,7 @@ namespace QuantConnect.Brokerages.Binance
         private bool Subscribe(IWebSocket webSocket, Symbol symbol)
         {
             var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
-            Send(webSocket,
-                new
-                {
-                    method = "SUBSCRIBE",
-                    @params = new[]
-                    {
-                        $"{brokerageSymbol.ToLowerInvariant()}@{TradeChannelName}",
-                        $"{brokerageSymbol.ToLowerInvariant()}@bookTicker"
-                    },
-                    id = GetNextRequestId()
-                }
-            );
-
+            Send(webSocket, new Messages.TradeAndQuoteChannelSubscribeRequest(GetNextRequestId(), brokerageSymbol, TradeChannelName));
             return true;
         }
 
@@ -776,19 +788,7 @@ namespace QuantConnect.Brokerages.Binance
         private bool Unsubscribe(IWebSocket webSocket, Symbol symbol)
         {
             var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
-            Send(webSocket,
-                new
-                {
-                    method = "UNSUBSCRIBE",
-                    @params = new[]
-                    {
-                        $"{brokerageSymbol.ToLowerInvariant()}@{TradeChannelName}",
-                        $"{brokerageSymbol.ToLowerInvariant()}@bookTicker"
-                    },
-                    id = GetNextRequestId()
-                }
-            );
-
+            Send(webSocket, new Messages.TradeAndQuoteChannelUnsubscribeRequest(GetNextRequestId(), brokerageSymbol, TradeChannelName));
             return true;
         }
 

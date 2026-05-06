@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+using System.Collections.Generic;
 using QuantConnect.Data;
 using QuantConnect.Util;
 using QuantConnect.Packets;
@@ -64,8 +65,9 @@ namespace QuantConnect.Brokerages.Binance
 
         protected override void SetJobInit(LiveNodePacket job, IDataAggregator aggregator)
         {
+            var privateWsUrl = BinanceFuturesBrokerageFactory.GetPrivateWsUrl(job.BrokerageData[BinanceFuturesBrokerageFactory.WebSocketUrlKeyName]);
             Initialize(
-                job.BrokerageData[BinanceFuturesBrokerageFactory.WebSocketUrlKeyName],
+                privateWsUrl,
                 orderWsUrl: null,
                 job.BrokerageData[BinanceFuturesBrokerageFactory.ApiUrlKeyName],
                 job.BrokerageData["binance-api-key"],
@@ -75,6 +77,27 @@ namespace QuantConnect.Brokerages.Binance
                 job,
                 Market.Binance
             );
+        }
+
+        protected override DataQueueHandlerSubscriptionManager CreateSubscriptionManager(
+            string dataWsUrl,
+            int maximumWebSocketConnections,
+            Dictionary<Symbol, int> symbolWeights,
+            int maximumSymbolsPerConnection,
+            ISymbolMapper symbolMapper,
+            RateGate webSocketRateLimiter,
+            Func<long> getNextRequestId,
+            Action<WebSocketMessage> onDataMessage)
+        {
+            return new BinanceFuturesSubscriptionManager(
+                dataWsUrl,
+                maximumSymbolsPerConnection,
+                maximumWebSocketConnections,
+                symbolWeights,
+                onDataMessage,
+                symbolMapper,
+                webSocketRateLimiter,
+                getNextRequestId);
         }
 
         /// <summary>

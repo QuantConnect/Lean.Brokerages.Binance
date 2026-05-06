@@ -163,6 +163,19 @@ namespace QuantConnect.Brokerages.Binance.Tests
         private const string CoinFuturesWsUrl = "wss://dstream.binance.com/ws";
         private const string BinanceUSWsUrl = "wss://stream.binance.us:9443/ws";
 
+        [TestCase("wss://fstream.binance.com/ws",          ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/private/ws",  ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com",             ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/",            ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/private/ws/", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/market/ws",   ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/public/ws",   ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://stream.binancefuture.com/ws",     ExpectedResult = "wss://stream.binancefuture.com/private/ws")]
+        public string GetPrivateWsUrlTests(string inputUrl)
+        {
+            return BinanceFuturesBrokerageFactory.GetPrivateWsUrl(inputUrl);
+        }
+
         [TestCase(SpotDataWsUrl, SpotOrderWsUrl, AccountType.Cash, ExpectedResult = BinanceConnectionMode.WsApiSignature)]
         [TestCase(SpotDataWsUrl, SpotOrderWsUrl, AccountType.Margin, ExpectedResult = BinanceConnectionMode.CrossMarginToken)]
         [TestCase(SpotDataWsUrl, SpotOrderWsUrl, null, ExpectedResult = BinanceConnectionMode.WsApiSignature)]

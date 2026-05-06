@@ -31,6 +31,9 @@ namespace QuantConnect.Brokerages.Binance
         public static readonly string ApiUrlKeyName = "binance-fapi-url";
         public static readonly string WebSocketUrlKeyName = "binance-fwebsocket-url";
 
+        private const string LiveHost = "fstream.binance.com";
+        private const string PaperHost = "stream.binancefuture.com";
+
         /// <summary>
         /// Factory constructor
         /// </summary>
@@ -56,7 +59,7 @@ namespace QuantConnect.Brokerages.Binance
             // paper trading available using https://testnet.binancefuture.com
             { ApiUrlKeyName, Config.Get(ApiUrlKeyName, "https://fapi.binance.com")},
             // paper trading available using wss://stream.binancefuture.com/ws
-            { WebSocketUrlKeyName, Config.Get(WebSocketUrlKeyName, "wss://fstream.binance.com/ws")},
+            { WebSocketUrlKeyName, Config.Get(WebSocketUrlKeyName, $"wss://{LiveHost}/ws")},
         };
 
         /// <summary>
@@ -85,6 +88,8 @@ namespace QuantConnect.Brokerages.Binance
                 throw new ArgumentException(string.Join(Environment.NewLine, errors));
             }
 
+            wsUrl = GetPrivateWsUrl(wsUrl);
+
             var brokerage = new BinanceFuturesBrokerage(
                 apiKey,
                 apiSecret,
@@ -96,6 +101,25 @@ namespace QuantConnect.Brokerages.Binance
             Composer.Instance.AddPart<IDataQueueHandler>(brokerage);
 
             return brokerage;
+        }
+
+        /// <summary>
+        /// Builds the user-data WebSocket endpoint for the configured Binance Futures host.
+        /// Recognizes the live host <c>fstream.binance.com</c> and the paper/testnet host
+        /// <c>stream.binancefuture.com</c>; any path on the input is ignored and the result
+        /// is always <c>wss://{host}/private/ws</c>.
+        /// </summary>
+        public static string GetPrivateWsUrl(string configuredUrl)
+        {
+            var host = new Uri(configuredUrl).Host;
+            if (!host.Equals(LiveHost, StringComparison.OrdinalIgnoreCase) &&
+                !host.Equals(PaperHost, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(
+                    $"Unsupported Binance Futures WebSocket host '{host}'. Expected '{LiveHost}' (live) or '{PaperHost}' (paper).",
+                    nameof(configuredUrl));
+            }
+            return $"wss://{host}/private/ws";
         }
     }
 }
