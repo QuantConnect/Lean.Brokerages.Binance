@@ -804,7 +804,7 @@ namespace QuantConnect.Brokerages.Binance
             return new RateGate(maxRequests, TimeSpan.FromSeconds(10));
         }
 
-        private protected bool Send<T>(IWebSocket webSocket, Symbol symbol, Func<string, long, T> requestMsg) where T : Messages.BaseChannelRequest
+        private protected bool Send(IWebSocket webSocket, Symbol symbol, Func<string, long, Messages.BaseChannelRequest> requestMsg)
         {
             var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
             var json = requestMsg(brokerageSymbol, GetNextRequestId()).ToJson();
