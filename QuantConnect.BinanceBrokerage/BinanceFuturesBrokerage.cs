@@ -22,6 +22,7 @@ using QuantConnect.Interfaces;
 using QuantConnect.Configuration;
 using QuantConnect.Brokerages.Binance.Constants;
 using System;
+using QuantConnect.Brokerages.Binance.Messages;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -65,9 +66,8 @@ namespace QuantConnect.Brokerages.Binance
 
         protected override void SetJobInit(LiveNodePacket job, IDataAggregator aggregator)
         {
-            var privateWsUrl = BinanceFuturesBrokerageFactory.GetPrivateWsUrl(job.BrokerageData[BinanceFuturesBrokerageFactory.WebSocketUrlKeyName]);
             Initialize(
-                privateWsUrl,
+                job.BrokerageData[BinanceFuturesBrokerageFactory.WebSocketUrlKeyName],
                 orderWsUrl: null,
                 job.BrokerageData[BinanceFuturesBrokerageFactory.ApiUrlKeyName],
                 job.BrokerageData["binance-api-key"],
@@ -77,27 +77,6 @@ namespace QuantConnect.Brokerages.Binance
                 job,
                 Market.Binance
             );
-        }
-
-        protected override DataQueueHandlerSubscriptionManager CreateSubscriptionManager(
-            string dataWsUrl,
-            int maximumWebSocketConnections,
-            Dictionary<Symbol, int> symbolWeights,
-            int maximumSymbolsPerConnection,
-            ISymbolMapper symbolMapper,
-            RateGate webSocketRateLimiter,
-            Func<long> getNextRequestId,
-            Action<WebSocketMessage> onDataMessage)
-        {
-            return new BinanceFuturesSubscriptionManager(
-                dataWsUrl,
-                maximumSymbolsPerConnection,
-                maximumWebSocketConnections,
-                symbolWeights,
-                onDataMessage,
-                symbolMapper,
-                webSocketRateLimiter,
-                getNextRequestId);
         }
 
         /// <summary>
@@ -146,6 +125,63 @@ namespace QuantConnect.Brokerages.Binance
         protected override SecurityType GetSupportedSecurityType()
         {
             return SecurityType.CryptoFuture;
+        }
+
+        private protected override List<DataQueueHandlerSubscriptionManager> CreateSubscriptionManager(
+            string dataWsUrl,
+            int maximumWebSocketConnections,
+            Dictionary<Symbol, int> symbolWeights,
+            int maximumSymbolsPerConnection,
+            Action<WebSocketMessage> onDataMessage)
+        {
+            // dataWsUrl is the private user-data stream; derive sibling
+            // market (aggTrade) and public (bookTicker) stream URLs.
+            var tradeUrl = dataWsUrl.Replace("/private/", "/market/");
+            var quoteUrl = dataWsUrl.Replace("/private/", "/public/");
+
+            return [
+                new BrokerageMultiWebSocketSubscriptionManager(
+                tradeUrl,
+                maximumSymbolsPerConnection,
+                maximumWebSocketConnections,
+                symbolWeights,
+                () => new BinanceWebSocketWrapper(null),
+                SubscribeTrade,
+                UnsubscribeTrade,
+                onDataMessage,
+                new TimeSpan(23, 45, 0)),
+
+                new BrokerageMultiWebSocketSubscriptionManager(
+                quoteUrl,
+                maximumSymbolsPerConnection,
+                maximumWebSocketConnections,
+                symbolWeights,
+                () => new BinanceWebSocketWrapper(null),
+                SubscribeQuote,
+                UnsubscribeQuote,
+                onDataMessage,
+                new TimeSpan(23, 45, 0))
+            ];
+        }
+
+        private bool SubscribeTrade(IWebSocket ws, Symbol symbol)
+        {
+            return Send(ws, symbol, (bs, requestId) => new TradeChannelSubscribeRequest(requestId, bs, TradeChannelName));
+        }
+
+        private bool UnsubscribeTrade(IWebSocket ws, Symbol symbol)
+        {
+            return Send(ws, symbol, (bs, requestId) => new TradeChannelUnsubscribeRequest(requestId, bs, TradeChannelName));
+        }
+
+        private bool SubscribeQuote(IWebSocket ws, Symbol symbol)
+        {
+            return Send(ws, symbol, (bs, requestId) => new QuoteChannelSubscribeRequest(requestId, bs));
+        }
+
+        private bool UnsubscribeQuote(IWebSocket ws, Symbol symbol)
+        {
+            return Send(ws, symbol, (bs, requestId) => new QuoteChannelUnsubscribeRequest(requestId, bs));
         }
     }
 }

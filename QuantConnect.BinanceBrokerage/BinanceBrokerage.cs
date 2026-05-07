@@ -66,6 +66,7 @@ namespace QuantConnect.Brokerages.Binance
         private Lazy<BinanceBaseRestApiClient> _apiClientLazy;
 
         private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
+        private IReadOnlyList<DataQueueHandlerSubscriptionManager> SubscriptionManagers { get; set; }
 
         private bool _unsupportedAssetHistoryLogged;
         private bool _unsupportedResolutionHistoryLogged;
@@ -505,7 +506,10 @@ namespace QuantConnect.Brokerages.Binance
             }
 
             var enumerator = _aggregator.Add(dataConfig, newDataAvailableHandler);
-            SubscriptionManager.Subscribe(dataConfig);
+            foreach (var subscriptionManager in SubscriptionManagers)
+            {
+                subscriptionManager.Subscribe(dataConfig);
+            }
 
             return enumerator;
         }
@@ -516,7 +520,10 @@ namespace QuantConnect.Brokerages.Binance
         /// <param name="dataConfig">Subscription config to be removed</param>
         public void Unsubscribe(SubscriptionDataConfig dataConfig)
         {
-            SubscriptionManager.Unsubscribe(dataConfig);
+            foreach (var subscriptionManager in SubscriptionManagers)
+            {
+                subscriptionManager.Unsubscribe(dataConfig);
+            }
             _aggregator.Remove(dataConfig);
         }
 
@@ -555,7 +562,10 @@ namespace QuantConnect.Brokerages.Binance
                 ApiClient.DisposeSafely();
             }
             _webSocketRateLimiter.DisposeSafely();
-            SubscriptionManager.DisposeSafely();
+            foreach (var subscriptionManager in SubscriptionManagers)
+            {
+                subscriptionManager.DisposeSafely();
+            }
             _webApiRateLimiter.DisposeSafely();
         }
 
@@ -607,14 +617,11 @@ namespace QuantConnect.Brokerages.Binance
             var maximumWebSocketConnections = Config.GetInt("binance-maximum-websocket-connections");
             var symbolWeights = maximumWebSocketConnections > 0 ? FetchSymbolWeights(restApiUrl) : null;
 
-            SubscriptionManager = CreateSubscriptionManager(
+            SubscriptionManagers = CreateSubscriptionManager(
                 dataWsUrl,
                 maximumWebSocketConnections,
                 symbolWeights,
                 MaximumSymbolsPerConnection,
-                _symbolMapper,
-                _webSocketRateLimiter,
-                GetNextRequestId,
                 OnDataMessage);
 
             // can be null, if BinanceBrokerage is used as DataQueueHandler only
@@ -746,17 +753,14 @@ namespace QuantConnect.Brokerages.Binance
         /// Override in derived brokerages to supply a specialised manager. The hook receives
         /// every collaborator the manager may need so the base class can keep its members private.
         /// </summary>
-        protected virtual DataQueueHandlerSubscriptionManager CreateSubscriptionManager(
+        private protected virtual List<DataQueueHandlerSubscriptionManager> CreateSubscriptionManager(
             string dataWsUrl,
             int maximumWebSocketConnections,
             Dictionary<Symbol, int> symbolWeights,
             int maximumSymbolsPerConnection,
-            ISymbolMapper symbolMapper,
-            RateGate webSocketRateLimiter,
-            Func<long> getNextRequestId,
             Action<WebSocketMessage> onDataMessage)
         {
-            return new BrokerageMultiWebSocketSubscriptionManager(
+            return [new BrokerageMultiWebSocketSubscriptionManager(
                 dataWsUrl,
                 maximumSymbolsPerConnection,
                 maximumWebSocketConnections,
@@ -765,7 +769,7 @@ namespace QuantConnect.Brokerages.Binance
                 Subscribe,
                 Unsubscribe,
                 onDataMessage,
-                new TimeSpan(23, 45, 0));
+                new TimeSpan(23, 45, 0))];
         }
 
         /// <summary>
@@ -775,9 +779,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <param name="symbol">The symbol to subscribe</param>
         private bool Subscribe(IWebSocket webSocket, Symbol symbol)
         {
-            var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
-            Send(webSocket, new Messages.TradeAndQuoteChannelSubscribeRequest(GetNextRequestId(), brokerageSymbol, TradeChannelName));
-            return true;
+            return Send(webSocket, symbol, (brokerageSymbol, requestId) => new Messages.TradeAndQuoteChannelSubscribeRequest(requestId, brokerageSymbol, TradeChannelName));
         }
 
         /// <summary>
@@ -787,9 +789,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <param name="symbol">The symbol to unsubscribe</param>
         private bool Unsubscribe(IWebSocket webSocket, Symbol symbol)
         {
-            var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
-            Send(webSocket, new Messages.TradeAndQuoteChannelUnsubscribeRequest(GetNextRequestId(), brokerageSymbol, TradeChannelName));
-            return true;
+            return Send(webSocket, symbol, (brokerageSymbol, requestId) => new Messages.TradeAndQuoteChannelUnsubscribeRequest(requestId, brokerageSymbol, TradeChannelName));
         }
 
         /// <summary>
@@ -804,17 +804,19 @@ namespace QuantConnect.Brokerages.Binance
             return new RateGate(maxRequests, TimeSpan.FromSeconds(10));
         }
 
-        private void Send(IWebSocket webSocket, object obj)
+        private protected bool Send<T>(IWebSocket webSocket, Symbol symbol, Func<string, long, T> requestMsg) where T : Messages.BaseChannelRequest
         {
-            var json = JsonConvert.SerializeObject(obj);
-
-            _webSocketRateLimiter.WaitToProceed();
+            var brokerageSymbol = _symbolMapper.GetBrokerageSymbol(symbol);
+            var json = requestMsg(brokerageSymbol, GetNextRequestId()).ToJson();
 
             if (Log.DebuggingEnabled)
             {
                 Log.Debug("BinanceBrokerage.Send(): " + json);
             }
+
+            _webSocketRateLimiter.WaitToProceed();
             webSocket.Send(json);
+            return true;
         }
 
         private long GetNextRequestId()
