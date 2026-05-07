@@ -159,7 +159,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
 
         private const string SpotDataWsUrl = "wss://stream.binance.com:9443/ws";
         private const string SpotOrderWsUrl = "wss://ws-api.binance.com:9443/ws-api/v3";
-        private const string FuturesWsUrl = "wss://fstream.binance.com/ws";
+        private const string FuturesWsUrl = "wss://fstream.binance.com/private/ws";
         private const string CoinFuturesWsUrl = "wss://dstream.binance.com/ws";
         private const string BinanceUSWsUrl = "wss://stream.binance.us:9443/ws";
 
