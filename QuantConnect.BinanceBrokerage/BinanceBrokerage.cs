@@ -562,9 +562,12 @@ namespace QuantConnect.Brokerages.Binance
                 ApiClient.DisposeSafely();
             }
             _webSocketRateLimiter.DisposeSafely();
+            if (SubscriptionManagers != null)
+            {
             foreach (var subscriptionManager in SubscriptionManagers)
             {
                 subscriptionManager.DisposeSafely();
+            }
             }
             _webApiRateLimiter.DisposeSafely();
         }

@@ -57,11 +57,11 @@ namespace QuantConnect.Brokerages.Binance.Messages
         { }
     }
 
-    public abstract class BaseUnSubscribeChannelRequest : BaseChannelRequest
+    public abstract class BaseUnsubscribeChannelRequest : BaseChannelRequest
     {
         public override string Method => "UNSUBSCRIBE";
 
-        protected BaseUnSubscribeChannelRequest(long id, string[] @params)
+        protected BaseUnsubscribeChannelRequest(long id, string[] @params)
             : base(id, @params)
         { }
     }
@@ -75,7 +75,7 @@ namespace QuantConnect.Brokerages.Binance.Messages
     }
 
     /// <summary>Unsubscribes the aggTrade channel.</summary>
-    public sealed class TradeChannelUnsubscribeRequest : BaseUnSubscribeChannelRequest
+    public sealed class TradeChannelUnsubscribeRequest : BaseUnsubscribeChannelRequest
     {
 
         public TradeChannelUnsubscribeRequest(long id, string brokerageSymbol, string tradeChannelName)
@@ -92,7 +92,7 @@ namespace QuantConnect.Brokerages.Binance.Messages
     }
 
     /// <summary>Unsubscribes the bookTicker channel.</summary>
-    public sealed class QuoteChannelUnsubscribeRequest : BaseUnSubscribeChannelRequest
+    public sealed class QuoteChannelUnsubscribeRequest : BaseUnsubscribeChannelRequest
     {
         public QuoteChannelUnsubscribeRequest(long id, string brokerageSymbol)
             : base(id, [Stream(brokerageSymbol, "bookTicker")])
@@ -108,7 +108,7 @@ namespace QuantConnect.Brokerages.Binance.Messages
     }
 
     /// <summary>Unsubscribes both the trade and bookTicker channels (spot default).</summary>
-    public sealed class TradeAndQuoteChannelUnsubscribeRequest : BaseUnSubscribeChannelRequest
+    public sealed class TradeAndQuoteChannelUnsubscribeRequest : BaseUnsubscribeChannelRequest
     {
         public TradeAndQuoteChannelUnsubscribeRequest(long id, string brokerageSymbol, string tradeChannelName)
             : base(id, [Stream(brokerageSymbol, tradeChannelName), Stream(brokerageSymbol, "bookTicker")])
