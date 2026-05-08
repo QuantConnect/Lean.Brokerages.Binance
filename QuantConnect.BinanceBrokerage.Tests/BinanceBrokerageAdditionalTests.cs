@@ -154,6 +154,19 @@ namespace QuantConnect.Brokerages.Binance.Tests
             Logging.Log.Trace(stringBuilder.ToString());
         }
 
+        [TestCase("wss://fstream.binance.com/ws", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/private/ws", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/private/ws/", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/market/ws", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/public/ws", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://stream.binancefuture.com/ws", ExpectedResult = "wss://stream.binancefuture.com/private/ws")]
+        public string GetPrivateWsUrlTests(string inputUrl)
+        {
+            return BinanceFuturesBrokerageFactory.GetPrivateWsUrl(inputUrl);
+        }
+
         public readonly record struct ExchangeInfo(IReadOnlyCollection<RateLimit> RateLimits);
         public readonly record struct RateLimit(string RateLimitType, string Interval, int IntervalNum, int Limit);
 

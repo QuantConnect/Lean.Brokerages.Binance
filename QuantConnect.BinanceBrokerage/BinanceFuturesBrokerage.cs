@@ -67,7 +67,7 @@ namespace QuantConnect.Brokerages.Binance
         protected override void SetJobInit(LiveNodePacket job, IDataAggregator aggregator)
         {
             Initialize(
-                job.BrokerageData[BinanceFuturesBrokerageFactory.WebSocketUrlKeyName],
+                BinanceFuturesBrokerageFactory.GetPrivateWsUrl(job.BrokerageData[BinanceFuturesBrokerageFactory.WebSocketUrlKeyName]),
                 orderWsUrl: null,
                 job.BrokerageData[BinanceFuturesBrokerageFactory.ApiUrlKeyName],
                 job.BrokerageData["binance-api-key"],
