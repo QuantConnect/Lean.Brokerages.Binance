@@ -564,10 +564,10 @@ namespace QuantConnect.Brokerages.Binance
             _webSocketRateLimiter.DisposeSafely();
             if (SubscriptionManagers != null)
             {
-            foreach (var subscriptionManager in SubscriptionManagers)
-            {
-                subscriptionManager.DisposeSafely();
-            }
+                foreach (var subscriptionManager in SubscriptionManagers)
+                {
+                    subscriptionManager.DisposeSafely();
+                }
             }
             _webApiRateLimiter.DisposeSafely();
         }
