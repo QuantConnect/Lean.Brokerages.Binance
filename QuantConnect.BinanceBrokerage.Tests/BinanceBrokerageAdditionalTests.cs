@@ -154,12 +154,25 @@ namespace QuantConnect.Brokerages.Binance.Tests
             Logging.Log.Trace(stringBuilder.ToString());
         }
 
+        [TestCase("wss://fstream.binance.com/ws", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/private/ws", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/private/ws/", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/market/ws", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://fstream.binance.com/public/ws", ExpectedResult = "wss://fstream.binance.com/private/ws")]
+        [TestCase("wss://stream.binancefuture.com/ws", ExpectedResult = "wss://stream.binancefuture.com/private/ws")]
+        public string GetPrivateWsUrlTests(string inputUrl)
+        {
+            return BinanceFuturesBrokerageFactory.GetPrivateWsUrl(inputUrl);
+        }
+
         public readonly record struct ExchangeInfo(IReadOnlyCollection<RateLimit> RateLimits);
         public readonly record struct RateLimit(string RateLimitType, string Interval, int IntervalNum, int Limit);
 
         private const string SpotDataWsUrl = "wss://stream.binance.com:9443/ws";
         private const string SpotOrderWsUrl = "wss://ws-api.binance.com:9443/ws-api/v3";
-        private const string FuturesWsUrl = "wss://fstream.binance.com/ws";
+        private const string FuturesWsUrl = "wss://fstream.binance.com/private/ws";
         private const string CoinFuturesWsUrl = "wss://dstream.binance.com/ws";
         private const string BinanceUSWsUrl = "wss://stream.binance.us:9443/ws";
 

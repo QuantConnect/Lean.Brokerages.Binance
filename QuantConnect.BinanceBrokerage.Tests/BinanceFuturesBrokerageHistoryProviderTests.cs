@@ -88,7 +88,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
             var apiKey = Config.Get("binance-api-key");
             var apiSecret = Config.Get("binance-api-secret");
             var apiUrl = Config.Get(BinanceFuturesBrokerageFactory.ApiUrlKeyName, "https://fapi.binance.com");
-            var websocketUrl = Config.Get(BinanceFuturesBrokerageFactory.WebSocketUrlKeyName, "wss://fstream.binance.com/ws");
+            var websocketUrl = Config.Get(BinanceFuturesBrokerageFactory.WebSocketUrlKeyName, "wss://fstream.binance.com/private/ws");
 
             return new BinanceFuturesBrokerage(
                 apiKey,

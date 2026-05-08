@@ -1068,5 +1068,49 @@ namespace QuantConnect.Brokerages.Binance.Tests
             }
             Assert.AreEqual(listenKey, @params.Value<string>("listenToken"), "'listenToken' value is incorrect.");
         }
+
+        private static IEnumerable<TestCaseData> ChannelSubscribeRequestCases
+        {
+            get
+            {
+                yield return new TestCaseData(
+                    new TradeChannelSubscribeRequest(1, "BTCUSDT", "aggTrade"),
+                    @"{""method"":""SUBSCRIBE"",""params"":[""btcusdt@aggTrade""],""id"":1}"
+                ).SetArgDisplayNames("Trade.Subscribe");
+
+                yield return new TestCaseData(
+                    new TradeChannelUnsubscribeRequest(2, "BTCUSDT", "aggTrade"),
+                    @"{""method"":""UNSUBSCRIBE"",""params"":[""btcusdt@aggTrade""],""id"":2}"
+                ).SetArgDisplayNames("Trade.Unsubscribe");
+
+                yield return new TestCaseData(
+                    new QuoteChannelSubscribeRequest(3, "ETHUSDT"),
+                    @"{""method"":""SUBSCRIBE"",""params"":[""ethusdt@bookTicker""],""id"":3}"
+                ).SetArgDisplayNames("Quote.Subscribe");
+
+                yield return new TestCaseData(
+                    new QuoteChannelUnsubscribeRequest(4, "ETHUSDT"),
+                    @"{""method"":""UNSUBSCRIBE"",""params"":[""ethusdt@bookTicker""],""id"":4}"
+                ).SetArgDisplayNames("Quote.Unsubscribe");
+
+                yield return new TestCaseData(
+                    new TradeAndQuoteChannelSubscribeRequest(5, "BNBUSDT", "aggTrade"),
+                    @"{""method"":""SUBSCRIBE"",""params"":[""bnbusdt@aggTrade"",""bnbusdt@bookTicker""],""id"":5}"
+                ).SetArgDisplayNames("TradeAndQuote.Subscribe");
+
+                yield return new TestCaseData(
+                    new TradeAndQuoteChannelUnsubscribeRequest(6, "BNBUSDT", "aggTrade"),
+                    @"{""method"":""UNSUBSCRIBE"",""params"":[""bnbusdt@aggTrade"",""bnbusdt@bookTicker""],""id"":6}"
+                ).SetArgDisplayNames("TradeAndQuote.Unsubscribe");
+            }
+        }
+
+        [TestCaseSource(nameof(ChannelSubscribeRequestCases))]
+        public void SerializeChannelSubscribeRequestShouldMatchExpectedJson(BaseChannelRequest request, string expectedJson)
+        {
+            var json = request.ToJson();
+
+            Assert.AreEqual(expectedJson, json);
+        }
     }
 }

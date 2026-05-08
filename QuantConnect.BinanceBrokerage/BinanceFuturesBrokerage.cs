@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+using System.Collections.Generic;
 using QuantConnect.Data;
 using QuantConnect.Util;
 using QuantConnect.Packets;
@@ -21,6 +22,7 @@ using QuantConnect.Interfaces;
 using QuantConnect.Configuration;
 using QuantConnect.Brokerages.Binance.Constants;
 using System;
+using QuantConnect.Brokerages.Binance.Messages;
 
 namespace QuantConnect.Brokerages.Binance
 {
@@ -65,7 +67,7 @@ namespace QuantConnect.Brokerages.Binance
         protected override void SetJobInit(LiveNodePacket job, IDataAggregator aggregator)
         {
             Initialize(
-                job.BrokerageData[BinanceFuturesBrokerageFactory.WebSocketUrlKeyName],
+                BinanceFuturesBrokerageFactory.GetPrivateWsUrl(job.BrokerageData[BinanceFuturesBrokerageFactory.WebSocketUrlKeyName]),
                 orderWsUrl: null,
                 job.BrokerageData[BinanceFuturesBrokerageFactory.ApiUrlKeyName],
                 job.BrokerageData["binance-api-key"],
@@ -123,6 +125,67 @@ namespace QuantConnect.Brokerages.Binance
         protected override SecurityType GetSupportedSecurityType()
         {
             return SecurityType.CryptoFuture;
+        }
+
+        private protected override Dictionary<TickType, DataQueueHandlerSubscriptionManager> CreateSubscriptionManager(
+            string dataWsUrl,
+            int maximumWebSocketConnections,
+            Dictionary<Symbol, int> symbolWeights,
+            int maximumSymbolsPerConnection,
+            Action<WebSocketMessage> onDataMessage)
+        {
+            // dataWsUrl is the private user-data stream; derive sibling
+            // market (aggTrade) and public (bookTicker) stream URLs.
+            var tradeUrl = dataWsUrl.Replace("/private/", "/market/");
+            var quoteUrl = dataWsUrl.Replace("/private/", "/public/");
+
+            var tradeManager = new BrokerageMultiWebSocketSubscriptionManager(
+                tradeUrl,
+                maximumSymbolsPerConnection,
+                maximumWebSocketConnections,
+                symbolWeights,
+                () => new BinanceWebSocketWrapper(null),
+                SubscribeTrade,
+                UnsubscribeTrade,
+                onDataMessage,
+                new TimeSpan(23, 45, 0));
+
+            var quoteManager = new BrokerageMultiWebSocketSubscriptionManager(
+                quoteUrl,
+                maximumSymbolsPerConnection,
+                maximumWebSocketConnections,
+                symbolWeights,
+                () => new BinanceWebSocketWrapper(null),
+                SubscribeQuote,
+                UnsubscribeQuote,
+                onDataMessage,
+                new TimeSpan(23, 45, 0));
+
+            return new()
+            {
+                [TickType.Trade] = tradeManager,
+                [TickType.Quote] = quoteManager
+            };
+        }
+
+        private bool SubscribeTrade(IWebSocket ws, Symbol symbol)
+        {
+            return Send(ws, symbol, (bs, requestId) => new TradeChannelSubscribeRequest(requestId, bs, TradeChannelName));
+        }
+
+        private bool UnsubscribeTrade(IWebSocket ws, Symbol symbol)
+        {
+            return Send(ws, symbol, (bs, requestId) => new TradeChannelUnsubscribeRequest(requestId, bs, TradeChannelName));
+        }
+
+        private bool SubscribeQuote(IWebSocket ws, Symbol symbol)
+        {
+            return Send(ws, symbol, (bs, requestId) => new QuoteChannelSubscribeRequest(requestId, bs));
+        }
+
+        private bool UnsubscribeQuote(IWebSocket ws, Symbol symbol)
+        {
+            return Send(ws, symbol, (bs, requestId) => new QuoteChannelUnsubscribeRequest(requestId, bs));
         }
     }
 }
