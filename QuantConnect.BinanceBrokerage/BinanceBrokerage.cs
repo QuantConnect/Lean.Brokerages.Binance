@@ -66,7 +66,7 @@ namespace QuantConnect.Brokerages.Binance
         private Lazy<BinanceBaseRestApiClient> _apiClientLazy;
 
         private BrokerageConcurrentMessageHandler<WebSocketMessage> _messageHandler;
-        private IReadOnlyList<DataQueueHandlerSubscriptionManager> SubscriptionManagers { get; set; }
+        private Dictionary<TickType, DataQueueHandlerSubscriptionManager> SubscriptionManagers { get; set; }
 
         private bool _unsupportedAssetHistoryLogged;
         private bool _unsupportedResolutionHistoryLogged;
@@ -506,7 +506,7 @@ namespace QuantConnect.Brokerages.Binance
             }
 
             var enumerator = _aggregator.Add(dataConfig, newDataAvailableHandler);
-            foreach (var subscriptionManager in SubscriptionManagers)
+            if (SubscriptionManagers.TryGetValue(dataConfig.TickType, out var subscriptionManager))
             {
                 subscriptionManager.Subscribe(dataConfig);
             }
@@ -520,7 +520,7 @@ namespace QuantConnect.Brokerages.Binance
         /// <param name="dataConfig">Subscription config to be removed</param>
         public void Unsubscribe(SubscriptionDataConfig dataConfig)
         {
-            foreach (var subscriptionManager in SubscriptionManagers)
+            if (SubscriptionManagers.TryGetValue(dataConfig.TickType, out var subscriptionManager))
             {
                 subscriptionManager.Unsubscribe(dataConfig);
             }
@@ -564,7 +564,7 @@ namespace QuantConnect.Brokerages.Binance
             _webSocketRateLimiter.DisposeSafely();
             if (SubscriptionManagers != null)
             {
-                foreach (var subscriptionManager in SubscriptionManagers)
+                foreach (var subscriptionManager in SubscriptionManagers.Values.Distinct())
                 {
                     subscriptionManager.DisposeSafely();
                 }
@@ -756,14 +756,14 @@ namespace QuantConnect.Brokerages.Binance
         /// Override in derived brokerages to supply a specialised manager. The hook receives
         /// every collaborator the manager may need so the base class can keep its members private.
         /// </summary>
-        private protected virtual List<DataQueueHandlerSubscriptionManager> CreateSubscriptionManager(
+        private protected virtual Dictionary<TickType, DataQueueHandlerSubscriptionManager> CreateSubscriptionManager(
             string dataWsUrl,
             int maximumWebSocketConnections,
             Dictionary<Symbol, int> symbolWeights,
             int maximumSymbolsPerConnection,
             Action<WebSocketMessage> onDataMessage)
         {
-            return [new BrokerageMultiWebSocketSubscriptionManager(
+            var manager = new BrokerageMultiWebSocketSubscriptionManager(
                 dataWsUrl,
                 maximumSymbolsPerConnection,
                 maximumWebSocketConnections,
@@ -772,7 +772,13 @@ namespace QuantConnect.Brokerages.Binance
                 Subscribe,
                 Unsubscribe,
                 onDataMessage,
-                new TimeSpan(23, 45, 0))];
+                new TimeSpan(23, 45, 0));
+
+            return new()
+            {
+                [TickType.Trade] = manager,
+                [TickType.Quote] = manager
+            };
         }
 
         /// <summary>

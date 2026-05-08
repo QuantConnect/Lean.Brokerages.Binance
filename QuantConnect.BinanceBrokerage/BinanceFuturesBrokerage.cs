@@ -127,7 +127,7 @@ namespace QuantConnect.Brokerages.Binance
             return SecurityType.CryptoFuture;
         }
 
-        private protected override List<DataQueueHandlerSubscriptionManager> CreateSubscriptionManager(
+        private protected override Dictionary<TickType, DataQueueHandlerSubscriptionManager> CreateSubscriptionManager(
             string dataWsUrl,
             int maximumWebSocketConnections,
             Dictionary<Symbol, int> symbolWeights,
@@ -139,8 +139,7 @@ namespace QuantConnect.Brokerages.Binance
             var tradeUrl = dataWsUrl.Replace("/private/", "/market/");
             var quoteUrl = dataWsUrl.Replace("/private/", "/public/");
 
-            return [
-                new BrokerageMultiWebSocketSubscriptionManager(
+            var tradeManager = new BrokerageMultiWebSocketSubscriptionManager(
                 tradeUrl,
                 maximumSymbolsPerConnection,
                 maximumWebSocketConnections,
@@ -149,9 +148,9 @@ namespace QuantConnect.Brokerages.Binance
                 SubscribeTrade,
                 UnsubscribeTrade,
                 onDataMessage,
-                new TimeSpan(23, 45, 0)),
+                new TimeSpan(23, 45, 0));
 
-                new BrokerageMultiWebSocketSubscriptionManager(
+            var quoteManager = new BrokerageMultiWebSocketSubscriptionManager(
                 quoteUrl,
                 maximumSymbolsPerConnection,
                 maximumWebSocketConnections,
@@ -160,8 +159,13 @@ namespace QuantConnect.Brokerages.Binance
                 SubscribeQuote,
                 UnsubscribeQuote,
                 onDataMessage,
-                new TimeSpan(23, 45, 0))
-            ];
+                new TimeSpan(23, 45, 0));
+
+            return new()
+            {
+                [TickType.Trade] = tradeManager,
+                [TickType.Quote] = quoteManager
+            };
         }
 
         private bool SubscribeTrade(IWebSocket ws, Symbol symbol)
