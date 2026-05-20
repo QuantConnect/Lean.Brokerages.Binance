@@ -161,7 +161,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
         [TestCase("wss://fstream.binance.com/private/ws/", ExpectedResult = "wss://fstream.binance.com/private/ws")]
         [TestCase("wss://fstream.binance.com/market/ws", ExpectedResult = "wss://fstream.binance.com/private/ws")]
         [TestCase("wss://fstream.binance.com/public/ws", ExpectedResult = "wss://fstream.binance.com/private/ws")]
-        [TestCase("wss://stream.binancefuture.com/ws", ExpectedResult = "wss://stream.binancefuture.com/private/ws")]
+        [TestCase("wss://fstream.binancefuture.com/ws", ExpectedResult = "wss://fstream.binancefuture.com/private/ws")]
         public string GetPrivateWsUrlTests(string inputUrl)
         {
             return BinanceFuturesBrokerageFactory.GetPrivateWsUrl(inputUrl);
