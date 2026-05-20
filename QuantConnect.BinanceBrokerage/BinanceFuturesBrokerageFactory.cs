@@ -55,7 +55,7 @@ namespace QuantConnect.Brokerages.Binance
             { "binance-api-key", Config.Get("binance-api-key")},
             { "binance-api-secret", Config.Get("binance-api-secret")},
 
-            // paper trading available using https://testnet.binancefuture.com
+            // paper trading available using https://demo-fapi.binance.com
             { ApiUrlKeyName, Config.Get(ApiUrlKeyName, "https://fapi.binance.com")},
             // paper trading available using wss://fstream.binancefuture.com/private/ws
             { WebSocketUrlKeyName, Config.Get(WebSocketUrlKeyName, $"wss://{LiveHost}/ws")},
