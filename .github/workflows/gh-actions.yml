@@ -4,20 +4,27 @@ on:
   push:
     branches: ['*']
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
+    container:
+        image: quantconnect/lean:foundation
+        options: --cpus 12 --memory 12g
+        env:
+          QC_BINANCE_API_KEY: ${{ secrets.QC_BINANCE_API_KEY }}
+          QC_BINANCE_API_SECRET: ${{ secrets.QC_BINANCE_API_SECRET }}
+          QC_BINANCEUS_API_KEY: ${{ secrets.QC_BINANCEUS_API_KEY }}
+          QC_BINANCEUS_API_SECRET: ${{ secrets.QC_BINANCEUS_API_SECRET }}
+          QC_JOB_USER_ID: ${{ secrets.QC_JOB_USER_ID }}
+          QC_API_ACCESS_TOKEN: ${{ secrets.QC_API_ACCESS_TOKEN }}
+          QC_JOB_ORGANIZATION_ID: ${{ secrets.QC_JOB_ORGANIZATION_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Liberate disk space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: true
-          large-packages: false
-          docker-images: false
-          swap-storage: false
 
       - name: Checkout Lean Same Branch
         id: lean-same-branch
@@ -38,14 +45,10 @@ jobs:
       - name: Move Lean
         run: mv Lean ../Lean
 
-      - uses: addnab/docker-run-action@v3
-        with:
-          image: quantconnect/lean:foundation
-          options: --workdir /__w/Lean.Brokerages.Binance/Lean.Brokerages.Binance -v /home/runner/work:/__w -e QC_BINANCE_API_KEY=${{ secrets.QC_BINANCE_API_KEY }} -e QC_BINANCE_API_SECRET=${{ secrets.QC_BINANCE_API_SECRET }} -e QC_BINANCEUS_API_KEY=${{ secrets.QC_BINANCEUS_API_KEY }} -e QC_BINANCEUS_API_SECRET=${{ secrets.QC_BINANCEUS_API_SECRET }}  -e QC_JOB_USER_ID=${{ secrets.QC_JOB_USER_ID }} -e QC_API_ACCESS_TOKEN=${{ secrets.QC_API_ACCESS_TOKEN }} -e QC_JOB_ORGANIZATION_ID=${{ secrets.QC_JOB_ORGANIZATION_ID }}
+      - name: Run build and tests
+        run: |
+          # name: Build
+          dotnet build /p:Configuration=Release /v:quiet /p:WarningLevel=1 QuantConnect.BinanceBrokerage.sln && \
+          # name: Run Tests
+          dotnet test ./QuantConnect.BinanceBrokerage.Tests/bin/Release/QuantConnect.Brokerages.Binance.Tests.dll
 
-          shell: bash
-          run: |
-            # name: Build
-            dotnet build /p:Configuration=Release /v:quiet /p:WarningLevel=1 QuantConnect.BinanceBrokerage.sln && \
-            # name: Run Tests
-            dotnet test ./QuantConnect.BinanceBrokerage.Tests/bin/Release/QuantConnect.Brokerages.Binance.Tests.dll
