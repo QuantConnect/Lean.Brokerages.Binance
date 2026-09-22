@@ -32,6 +32,7 @@ namespace QuantConnect.Brokerages.Binance
     [BrokerageFactory(typeof(BinanceFuturesBrokerageFactory))]
     public class BinanceFuturesBrokerage : BinanceBrokerage
     {
+
         /// <summary>
         /// Gets the trade channel name used for streaming trade information in the overridden context.
         /// </summary>

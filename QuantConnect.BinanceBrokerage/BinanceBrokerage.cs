@@ -256,15 +256,51 @@ namespace QuantConnect.Brokerages.Binance
         {
             var orders = ApiClient.GetOpenOrders();
             List<Order> list = new List<Order>();
+            var orderLists = new Dictionary<long, List<(Messages.OpenOrder BrokerageOrder, Order LeanOrder)>>();
             foreach (var item in orders)
             {
                 if (TryCreateLeanOrder(item, out var order))
                 {
                     list.Add(order);
+                    if (item.OrderListId >= 0)
+                    {
+                        if (!orderLists.TryGetValue(item.OrderListId, out var orderList))
+                        {
+                            orderLists[item.OrderListId] = orderList = new();
+                        }
+                        orderList.Add((item, order));
+                    }
                 }
             }
 
+            SetContingencies(orderLists.Values);
             return list;
+        }
+
+        /// <summary>
+        /// Rebuilds, best effort, the contingencies of the open orders which belong to an order list (OCO, OTO, OTOCO):
+        /// the pending orders are held until the working order fills, and a pair of them cancel each other
+        /// </summary>
+        private static void SetContingencies(IEnumerable<List<(Messages.OpenOrder BrokerageOrder, Order LeanOrder)>> orderLists)
+        {
+            foreach (var orderList in orderLists)
+            {
+                var pending = orderList.Where(x => "PENDING_NEW".Equals(x.BrokerageOrder.Status, StringComparison.InvariantCultureIgnoreCase)).Select(x => x.LeanOrder).ToList();
+                var working = orderList.Where(x => !pending.Contains(x.LeanOrder)).Select(x => x.LeanOrder).ToList();
+
+                if (working.Count == 1 && pending.Count > 0)
+                {
+                    // OTO/OTOCO: the working order triggers the pending ones once filled
+                    OrderContingency.Trigger(working, pending);
+                }
+
+                // the two orders of an OCO, or the ones triggered by a filled working order, cancel each other
+                var siblings = pending.Count == 2 ? pending : pending.Count == 0 && working.Count == 2 ? working : null;
+                if (siblings != null)
+                {
+                    OrderContingency.Relate(ContingencyType.OneCancelsOther, siblings);
+                }
+            }
         }
 
         /// <summary>
@@ -329,6 +365,21 @@ namespace QuantConnect.Brokerages.Binance
                 return false;
             }
             var submitted = false;
+
+            if (order.Contingency != null)
+            {
+                // contingent orders are placed together, as an order list, once they have all arrived
+                if (!ContingentOrderCache.TryGetContingentCachedOrders(order, out var contingentOrders))
+                {
+                    return true;
+                }
+
+                _messageHandler.WithLockedStream(() =>
+                {
+                    submitted = ApiClient.PlaceContingentOrders(contingentOrders);
+                });
+                return submitted;
+            }
 
             _messageHandler.WithLockedStream(() =>
             {

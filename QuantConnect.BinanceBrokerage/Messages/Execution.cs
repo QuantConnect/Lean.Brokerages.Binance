@@ -31,6 +31,12 @@ namespace QuantConnect.Brokerages.Binance.Messages
         public string OrderId { get; set; }
 
         /// <summary>
+        /// The id of the order list (OCO, OTO, OTOCO) the order belongs to, -1 if none
+        /// </summary>
+        [JsonProperty("g")]
+        public long OrderListId { get; set; } = -1;
+
+        /// <summary>
         /// Strategy (algorithm) order identifier.
         /// </summary>
         /// <remarks>
