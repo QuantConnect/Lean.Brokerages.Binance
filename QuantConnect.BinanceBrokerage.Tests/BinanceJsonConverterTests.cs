@@ -405,6 +405,58 @@ namespace QuantConnect.Brokerages.Binance.Tests
             }
         }
 
+        [Test]
+        public void MappingAlgoTakeProfitMarketOrderToLeanOrder()
+        {
+            // The USD-M Futures GetOpenOrders() concatenates GET /fapi/v1/openOrders with
+            // GET /fapi/v1/openAlgoOrders, and Binance reports conditional take-profit orders
+            // from that second endpoint as orderType=TAKE_PROFIT_MARKET. An unmapped type makes
+            // GetOpenOrders() raise a brokerage error, which aborts live algorithm initialization.
+            // Payload shape taken from a real GET /fapi/v1/openAlgoOrders response.
+            const string json = @"{
+        ""algoId"": 2000000184401794,
+        ""clientAlgoId"": ""47Qn1gLQ29TTEJCBbQGPkb"",
+        ""algoType"": ""CONDITIONAL"",
+        ""orderType"": ""TAKE_PROFIT_MARKET"",
+        ""symbol"": ""ACHUSDT"",
+        ""side"": ""BUY"",
+        ""positionSide"": ""BOTH"",
+        ""timeInForce"": ""GTE_GTC"",
+        ""quantity"": ""600.0"",
+        ""algoStatus"": ""NEW"",
+        ""actualOrderId"": """",
+        ""actualQty"": ""0.0"",
+        ""triggerPrice"": ""0.0094"",
+        ""price"": ""0.0"",
+        ""icebergQuantity"": null,
+        ""selfTradePreventionMode"": ""EXPIRE_MAKER"",
+        ""workingType"": ""CONTRACT_PRICE"",
+        ""priceMatch"": ""NONE"",
+        ""closePosition"": false,
+        ""priceProtect"": false,
+        ""reduceOnly"": false,
+        ""createTime"": 1767872015384,
+        ""updateTime"": 1767872015384,
+        ""triggerTime"": 0,
+        ""goodTillDate"": 0
+    }";
+
+            // Step 1: REST payload => Binance DTO
+            var openOrder = JsonConvert.DeserializeObject<OpenOrder>(json);
+
+            Assert.IsNotNull(openOrder);
+            Assert.AreEqual("TAKE_PROFIT_MARKET", openOrder.Type);
+            Assert.Greater(openOrder.StopPrice, 0);
+
+            // Step 2: Binance DTO => Lean order
+            Assert.IsTrue(_brokerage.TryCreateLeanOrder(openOrder, out var order),
+                $"TryCreateLeanOrder failed for order type '{openOrder.Type}'");
+
+            Assert.IsInstanceOf<StopMarketOrder>(order);
+            Assert.AreEqual(openOrder.StopPrice, ((StopMarketOrder)order).StopPrice);
+            Assert.AreEqual(openOrder.Id, order.BrokerId.Single());
+        }
+
         private static IEnumerable<OrderResponse> OrderWebSocketMessages
         {
             get
