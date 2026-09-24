@@ -36,6 +36,11 @@ namespace QuantConnect.Brokerages.Binance.Messages
         public string Side { get; set; }
 
         /// <summary>
+        /// The client order id, the one given when placing it
+        /// </summary>
+        public string ClientOrderId { get; set; }
+
+        /// <summary>
         /// The id of the order list (OCO, OTO, OTOCO) the order belongs to, -1 if none
         /// </summary>
         [JsonProperty("orderListId")]

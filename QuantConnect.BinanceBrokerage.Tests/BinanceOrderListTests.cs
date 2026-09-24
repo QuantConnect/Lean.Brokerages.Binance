@@ -64,7 +64,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 Member(2, manager, new StopLimitOrder(BTCUSDT, -1, 90000, 89000, Time))
             };
 
-            var body = _client.CreateOrderListBody(orders, out var endpoint);
+            var body = _client.CreateOrderListBody(orders, "1", out var endpoint);
 
             Assert.AreEqual("orderList/oco", endpoint);
             Assert.AreEqual("BTCUSDT", body["symbol"]);
@@ -78,6 +78,9 @@ namespace QuantConnect.Brokerages.Binance.Tests
             Assert.AreEqual("90000", body["belowStopPrice"]);
             Assert.AreEqual("89000", body["belowPrice"]);
             Assert.AreEqual("GTC", body["belowTimeInForce"]);
+            // each order is identified by its lean order id and the suffix, unique among the open orders
+            Assert.AreEqual($"{orders[0].Id}-1", body["aboveClientOrderId"]);
+            Assert.AreEqual($"{orders[1].Id}-1", body["belowClientOrderId"]);
         }
 
         [Test]
@@ -93,7 +96,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 Contingency = manager.WithLinks([new(1, ContingencyType.OneTriggersOther, ContingencyRole.Child)])
             };
 
-            var body = _client.CreateOrderListBody(new List<Order> { parent, child }, out var endpoint);
+            var body = _client.CreateOrderListBody(new List<Order> { parent, child }, "1", out var endpoint);
 
             Assert.AreEqual("orderList/oto", endpoint);
             Assert.AreEqual("LIMIT", body["workingType"]);
@@ -119,7 +122,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 Copy(bracket[2], new StopLimitOrder(BTCUSDT, -1, 90000, 89000, Time), manager)
             };
 
-            var body = _client.CreateOrderListBody(orders, out var endpoint);
+            var body = _client.CreateOrderListBody(orders, "1", out var endpoint);
 
             Assert.AreEqual("orderList/otoco", endpoint);
             Assert.AreEqual("LIMIT", body["workingType"]);
@@ -142,7 +145,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
                 Member(1, manager, new LimitOrder(BTCUSDT, -1, 110000, Time)),
                 Member(2, manager, new StopLimitOrder(BTCUSDT, -2, 90000, 89000, Time))
             };
-            Assert.Throws<NotSupportedException>(() => _client.CreateOrderListBody(orders, out _));
+            Assert.Throws<NotSupportedException>(() => _client.CreateOrderListBody(orders, "1", out _));
 
             // market working order
             var parent = new MarketOrder(BTCUSDT, 1, Time)
@@ -153,7 +156,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
             {
                 Contingency = manager.WithLinks([new(1, ContingencyType.OneTriggersOther, ContingencyRole.Child)])
             };
-            Assert.Throws<NotSupportedException>(() => _client.CreateOrderListBody(new List<Order> { parent, child }, out _));
+            Assert.Throws<NotSupportedException>(() => _client.CreateOrderListBody(new List<Order> { parent, child }, "1", out _));
         }
 
         [Test]

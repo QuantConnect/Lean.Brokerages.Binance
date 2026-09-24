@@ -288,9 +288,11 @@ namespace QuantConnect.Brokerages.Binance
         {
             string endpoint;
             IDictionary<string, object> body;
+            // the client order ids have to be unique among the open orders, the lean order ids are reused across deployments
+            var clientOrderIdSuffix = DateTime.UtcNow.Ticks.ToStringInvariant();
             try
             {
-                body = CreateOrderListBody(orders, out endpoint);
+                body = CreateOrderListBody(orders, clientOrderIdSuffix, out endpoint);
             }
             catch (Exception exception)
             {
@@ -310,8 +312,8 @@ namespace QuantConnect.Brokerages.Binance
             }
 
             var orderList = JsonConvert.DeserializeObject<Messages.OrderList>(response.Content);
-            var reports = orderList?.OrderReports;
-            if (reports == null || reports.Count != orders.Count)
+            var reports = orderList?.OrderReports?.ToDictionary(report => report.ClientOrderId ?? string.Empty);
+            if (reports == null || orders.Any(order => !reports.ContainsKey(GetClientOrderId(order, clientOrderIdSuffix))))
             {
                 var errorMessage = $"Error parsing response from place order list: {response.Content}";
                 OnInvalidOrders(orders, errorMessage);
@@ -319,28 +321,29 @@ namespace QuantConnect.Brokerages.Binance
                 return true;
             }
 
-            // match each report to its lean order: same side and price level
-            var pendingReports = reports.ToList();
             foreach (var order in orders)
             {
-                var side = ConvertOrderDirection(order.Direction);
-                var priceLevel = GetPriceLevel(order);
-                var report = pendingReports.FirstOrDefault(r => side.Equals(r.Side, StringComparison.InvariantCultureIgnoreCase)
-                        && (r.Price == priceLevel || r.StopPrice == priceLevel))
-                    ?? pendingReports[0];
-                pendingReports.Remove(report);
-                OnOrderSubmit(report, order);
+                OnOrderSubmit(reports[GetClientOrderId(order, clientOrderIdSuffix)], order);
             }
             return true;
+        }
+
+        /// <summary>
+        /// The client order id of an order of an order list, which identifies its report
+        /// </summary>
+        private static string GetClientOrderId(Order order, string clientOrderIdSuffix)
+        {
+            return $"{order.Id.ToStringInvariant()}-{clientOrderIdSuffix}";
         }
 
         /// <summary>
         /// Creates the order list body payload for the given set of contingent orders
         /// </summary>
         /// <param name="orders">The orders of the set, all for the same symbol</param>
+        /// <param name="clientOrderIdSuffix">The suffix of the client order ids of the orders, which makes them unique</param>
         /// <param name="endpoint">The order list endpoint to use</param>
         /// <returns>The payload</returns>
-        protected internal IDictionary<string, object> CreateOrderListBody(List<Order> orders, out string endpoint)
+        protected internal IDictionary<string, object> CreateOrderListBody(List<Order> orders, string clientOrderIdSuffix, out string endpoint)
         {
             var parent = orders.SingleOrDefault(order => order.GetContingencyLink(ContingencyRole.Parent) != null);
             var members = orders.Where(order => order != parent).ToList();
@@ -364,8 +367,8 @@ namespace QuantConnect.Brokerages.Binance
                 body["side"] = ConvertOrderDirection(members[0].Direction);
                 body["quantity"] = members[0].AbsoluteQuantity.ToString(CultureInfo.InvariantCulture);
                 var (above, below) = SortAboveBelow(members);
-                AddOrderListParameters(body, above, "above", allowLimit: false);
-                AddOrderListParameters(body, below, "below", allowLimit: false);
+                AddOrderListParameters(body, above, "above", clientOrderIdSuffix, allowLimit: false);
+                AddOrderListParameters(body, below, "below", clientOrderIdSuffix, allowLimit: false);
                 return body;
             }
 
@@ -373,7 +376,7 @@ namespace QuantConnect.Brokerages.Binance
             {
                 throw new NotSupportedException("The working order of an OTO or OTOCO order list has to be a limit order");
             }
-            AddOrderListParameters(body, parent, "working", allowLimit: true);
+            AddOrderListParameters(body, parent, "working", clientOrderIdSuffix, allowLimit: true);
             body["workingSide"] = ConvertOrderDirection(parent.Direction);
             body["workingQuantity"] = parent.AbsoluteQuantity.ToString(CultureInfo.InvariantCulture);
 
@@ -382,24 +385,25 @@ namespace QuantConnect.Brokerages.Binance
             if (members.Count == 1)
             {
                 endpoint = "orderList/oto";
-                AddOrderListParameters(body, members[0], "pending", allowLimit: true);
+                AddOrderListParameters(body, members[0], "pending", clientOrderIdSuffix, allowLimit: true);
             }
             else
             {
                 endpoint = "orderList/otoco";
                 var (above, below) = SortAboveBelow(members);
-                AddOrderListParameters(body, above, "pendingAbove", allowLimit: false);
-                AddOrderListParameters(body, below, "pendingBelow", allowLimit: false);
+                AddOrderListParameters(body, above, "pendingAbove", clientOrderIdSuffix, allowLimit: false);
+                AddOrderListParameters(body, below, "pendingBelow", clientOrderIdSuffix, allowLimit: false);
             }
             return body;
         }
 
         /// <summary>
-        /// Adds the type, prices and time in force of the order to the body using the given parameter prefix
+        /// Adds the client order id, type, prices and time in force of the order to the body using the given parameter prefix
         /// </summary>
         /// <param name="allowLimit">False when the LIMIT type is not allowed, it's replaced by LIMIT_MAKER which does not take a time in force</param>
-        private void AddOrderListParameters(IDictionary<string, object> body, Order order, string prefix, bool allowLimit)
+        private void AddOrderListParameters(IDictionary<string, object> body, Order order, string prefix, string clientOrderIdSuffix, bool allowLimit)
         {
+            body[$"{prefix}ClientOrderId"] = GetClientOrderId(order, clientOrderIdSuffix);
             var orderBody = CreateOrderBodyCore(order);
             var type = (string)orderBody["type"];
             if (type == "LIMIT" && !allowLimit)

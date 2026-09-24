@@ -24,7 +24,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
         private static readonly OrderTestParameters ContingentLimit = new LimitOrderTestParameters(StaticSymbol, 0.06m, 0.02m);
         // a buy stop limit order above the market and a sell stop limit order below it
         private static readonly OrderTestParameters ContingentBuyStopLimit = new StopLimitOrderTestParameters(StaticSymbol, 0.037m, 0.0365m);
-        private static readonly OrderTestParameters ContingentSellStopLimit = new StopLimitOrderTestParameters(StaticSymbol, 0.0255m, 0.026m);
+        private static readonly OrderTestParameters ContingentSellStopLimit = new StopLimitOrderTestParameters(StaticSymbol, 0.0275m, 0.028m);
         // a buy limit order above the market, which fills right away
         private static readonly OrderTestParameters ContingentMarketableLimit = new LimitOrderTestParameters(StaticSymbol, 0.06m, 0.035m);
 
