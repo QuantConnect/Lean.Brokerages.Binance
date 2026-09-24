@@ -39,5 +39,12 @@ namespace QuantConnect.Brokerages.Binance.Tests
         {
             base.ContingentOrdersCancel(parameters);
         }
+
+        [Explicit("This test requires a configured and testable Binance practice account")]
+        [Test, TestCaseSource(nameof(RestingContingentOrders))]
+        public override void ContingentOrdersGetOpenOrders(ContingentOrderTestParameters parameters)
+        {
+            base.ContingentOrdersGetOpenOrders(parameters);
+        }
     }
 }
