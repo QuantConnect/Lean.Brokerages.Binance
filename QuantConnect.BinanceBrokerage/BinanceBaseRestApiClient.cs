@@ -270,6 +270,192 @@ namespace QuantConnect.Brokerages.Binance
         }
 
         /// <summary>
+        /// Places a set of contingent orders as an order list: OCO, OTO or OTOCO
+        /// </summary>
+        /// <param name="orders">The orders of the set, all for the same symbol</param>
+        /// <returns>True if the request for the orders has been placed, false otherwise</returns>
+        public virtual bool PlaceContingentOrders(List<Order> orders)
+        {
+            throw new NotSupportedException($"{GetType().Name}.{nameof(PlaceContingentOrders)}: contingent orders are not supported");
+        }
+
+        /// <summary>
+        /// Places a set of contingent orders as an order list: OCO, OTO or OTOCO
+        /// </summary>
+        /// <param name="orders">The orders of the set, all for the same symbol</param>
+        /// <returns>True if the request for the orders has been placed, false otherwise</returns>
+        protected bool PlaceOrderList(List<Order> orders)
+        {
+            string endpoint;
+            IDictionary<string, object> body;
+            // the client order ids have to be unique among the open orders, the lean order ids are reused across deployments
+            var clientOrderIdSuffix = DateTime.UtcNow.Ticks.ToStringInvariant();
+            try
+            {
+                body = CreateOrderListBody(orders, clientOrderIdSuffix, out endpoint);
+            }
+            catch (Exception exception)
+            {
+                Log.Error(exception);
+                OnInvalidOrders(orders, $"Binance Order Event: {exception.Message}");
+                return true;
+            }
+
+            var request = new RestRequest($"{ApiPrefix}/{endpoint}", Method.POST);
+            var response = ExecuteRestRequestWithSignature(request, body);
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                var message = $"Order list failed, Order Ids: [{string.Join(",", orders.Select(order => order.Id))}] content: {response.Content}";
+                OnInvalidOrders(orders, response.Content);
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
+                return true;
+            }
+
+            var orderList = JsonConvert.DeserializeObject<Messages.OrderList>(response.Content);
+            var reports = orderList?.OrderReports?.ToDictionary(report => report.ClientOrderId ?? string.Empty);
+            if (reports == null || orders.Any(order => !reports.ContainsKey(GetClientOrderId(order, clientOrderIdSuffix))))
+            {
+                var errorMessage = $"Error parsing response from place order list: {response.Content}";
+                OnInvalidOrders(orders, errorMessage);
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, (int)response.StatusCode, errorMessage));
+                return true;
+            }
+
+            foreach (var order in orders)
+            {
+                OnOrderSubmit(reports[GetClientOrderId(order, clientOrderIdSuffix)], order);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// The client order id of an order of an order list, which identifies its report
+        /// </summary>
+        private static string GetClientOrderId(Order order, string clientOrderIdSuffix)
+        {
+            return $"{order.Id.ToStringInvariant()}-{clientOrderIdSuffix}";
+        }
+
+        /// <summary>
+        /// Creates the order list body payload for the given set of contingent orders
+        /// </summary>
+        /// <param name="orders">The orders of the set, all for the same symbol</param>
+        /// <param name="clientOrderIdSuffix">The suffix of the client order ids of the orders, which makes them unique</param>
+        /// <param name="endpoint">The order list endpoint to use</param>
+        /// <returns>The payload</returns>
+        protected internal IDictionary<string, object> CreateOrderListBody(List<Order> orders, string clientOrderIdSuffix, out string endpoint)
+        {
+            var parent = orders.SingleOrDefault(order => order.GetContingencyLink(ContingencyRole.Parent) != null);
+            var members = orders.Where(order => order != parent).ToList();
+            if (members.Count == 0 || members.Count > 2 || members.Any(order => order.GroupOrderManager != null))
+            {
+                throw new NotSupportedException("Unsupported set of contingent orders, expected an OCO, OTO or OTOCO order list");
+            }
+            if (members.Count == 2 && members[0].AbsoluteQuantity != members[1].AbsoluteQuantity)
+            {
+                throw new NotSupportedException("The orders of a one cancels other order list require the same quantity");
+            }
+
+            var body = new Dictionary<string, object>
+            {
+                { "symbol", SymbolMapper.GetBrokerageSymbol(orders[0].Symbol) }
+            };
+
+            if (parent == null)
+            {
+                endpoint = "orderList/oco";
+                body["side"] = ConvertOrderDirection(members[0].Direction);
+                body["quantity"] = members[0].AbsoluteQuantity.ToString(CultureInfo.InvariantCulture);
+                var (above, below) = SortAboveBelow(members);
+                AddOrderListParameters(body, above, "above", clientOrderIdSuffix, allowLimit: false);
+                AddOrderListParameters(body, below, "below", clientOrderIdSuffix, allowLimit: false);
+                return body;
+            }
+
+            if (parent.Type != OrderType.Limit)
+            {
+                throw new NotSupportedException("The working order of an OTO or OTOCO order list has to be a limit order");
+            }
+            AddOrderListParameters(body, parent, "working", clientOrderIdSuffix, allowLimit: true);
+            body["workingSide"] = ConvertOrderDirection(parent.Direction);
+            body["workingQuantity"] = parent.AbsoluteQuantity.ToString(CultureInfo.InvariantCulture);
+
+            body["pendingSide"] = ConvertOrderDirection(members[0].Direction);
+            body["pendingQuantity"] = members[0].AbsoluteQuantity.ToString(CultureInfo.InvariantCulture);
+            if (members.Count == 1)
+            {
+                endpoint = "orderList/oto";
+                AddOrderListParameters(body, members[0], "pending", clientOrderIdSuffix, allowLimit: true);
+            }
+            else
+            {
+                endpoint = "orderList/otoco";
+                var (above, below) = SortAboveBelow(members);
+                AddOrderListParameters(body, above, "pendingAbove", clientOrderIdSuffix, allowLimit: false);
+                AddOrderListParameters(body, below, "pendingBelow", clientOrderIdSuffix, allowLimit: false);
+            }
+            return body;
+        }
+
+        /// <summary>
+        /// Adds the client order id, type, prices and time in force of the order to the body using the given parameter prefix
+        /// </summary>
+        /// <param name="allowLimit">False when the LIMIT type is not allowed, it's replaced by LIMIT_MAKER which does not take a time in force</param>
+        private void AddOrderListParameters(IDictionary<string, object> body, Order order, string prefix, string clientOrderIdSuffix, bool allowLimit)
+        {
+            body[$"{prefix}ClientOrderId"] = GetClientOrderId(order, clientOrderIdSuffix);
+            var orderBody = CreateOrderBodyCore(order);
+            var type = (string)orderBody["type"];
+            if (type == "LIMIT" && !allowLimit)
+            {
+                type = "LIMIT_MAKER";
+                orderBody.Remove("timeInForce");
+            }
+            body[$"{prefix}Type"] = type;
+            foreach (var key in new[] { "price", "stopPrice", "timeInForce" })
+            {
+                if (orderBody.TryGetValue(key, out var value))
+                {
+                    body[$"{prefix}{char.ToUpperInvariant(key[0])}{key[1..]}"] = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sorts a pair of orders by their price level: the highest goes above
+        /// </summary>
+        private static (Order Above, Order Below) SortAboveBelow(List<Order> orders)
+        {
+            return GetPriceLevel(orders[0]) >= GetPriceLevel(orders[1]) ? (orders[0], orders[1]) : (orders[1], orders[0]);
+        }
+
+        /// <summary>
+        /// Gets the price level at which the order works: the stop price for stop orders, else the limit price
+        /// </summary>
+        private static decimal GetPriceLevel(Order order)
+        {
+            switch (order)
+            {
+                case LimitOrder limitOrder:
+                    return limitOrder.LimitPrice;
+                case StopLimitOrder stopLimitOrder:
+                    return stopLimitOrder.StopPrice;
+                case StopMarketOrder stopMarketOrder:
+                    return stopMarketOrder.StopPrice;
+                default:
+                    return 0;
+            }
+        }
+
+        private void OnInvalidOrders(List<Order> orders, string message)
+        {
+            foreach (var order in orders)
+            {
+                OnOrderEvent(new OrderEvent(order, DateTime.UtcNow, OrderFee.Zero, message) { Status = OrderStatus.Invalid });
+            }
+        }
+
+        /// <summary>
         /// Create new order body payload
         /// </summary>
         /// <param name="order">Lean order</param>

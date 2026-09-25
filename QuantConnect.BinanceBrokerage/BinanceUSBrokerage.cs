@@ -25,6 +25,7 @@ namespace QuantConnect.Brokerages.Binance
     [BrokerageFactory(typeof(BinanceUSBrokerageFactory))]
     public class BinanceUSBrokerage : BinanceBrokerage
     {
+
         public BinanceUSBrokerage() : base(Market.BinanceUS)
         {
         }

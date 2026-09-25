@@ -40,6 +40,16 @@ namespace QuantConnect.Brokerages.Binance
         protected override string WsPrefix => _prefix;
 
         /// <summary>
+        /// Places a set of contingent orders as an order list: OCO, OTO or OTOCO
+        /// </summary>
+        /// <param name="orders">The orders of the set, all for the same symbol</param>
+        /// <returns>True if the request for the orders has been placed, false otherwise</returns>
+        public override bool PlaceContingentOrders(System.Collections.Generic.List<QuantConnect.Orders.Order> orders)
+        {
+            return PlaceOrderList(orders);
+        }
+
+        /// <summary>
         /// Creates a new instance
         /// </summary>
         public BinanceSpotRestApiClient(

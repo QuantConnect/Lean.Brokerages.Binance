@@ -35,6 +35,17 @@ namespace QuantConnect.Brokerages.Binance.Messages
         public virtual string Type { get; set; }
         public string Side { get; set; }
 
+        /// <summary>
+        /// The client order id, the one given when placing it
+        /// </summary>
+        public string ClientOrderId { get; set; }
+
+        /// <summary>
+        /// The id of the order list (OCO, OTO, OTOCO) the order belongs to, -1 if none
+        /// </summary>
+        [JsonProperty("orderListId")]
+        public long OrderListId { get; set; } = -1;
+
         public virtual long Time { get; set; }
 
         public decimal Quantity => string.Equals(Side, "buy", StringComparison.OrdinalIgnoreCase) ? OriginalAmount : -OriginalAmount;

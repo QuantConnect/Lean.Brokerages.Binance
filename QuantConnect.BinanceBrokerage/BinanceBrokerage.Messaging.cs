@@ -271,6 +271,13 @@ namespace QuantConnect.Brokerages.Binance
                 }
 
                 var status = ConvertOrderStatus(data.OrderStatus, out var message);
+                if (status == OrderStatus.Invalid && order.Contingency != null
+                    && "EXPIRED".Equals(data.OrderStatus, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    // the orders of an order list are expired, not canceled, when a related order fills or is canceled
+                    status = OrderStatus.Canceled;
+                    message = "Canceled by the order list: a related order was filled or canceled.";
+                }
                 // CancelOrder (REST) fires OnOrderEvent(Canceled) immediately on success.
                 // The subsequent WS CANCELED event is a duplicate — skip it to avoid
                 // sending the same terminal status twice. External cancels arrive here
@@ -298,6 +305,9 @@ namespace QuantConnect.Brokerages.Binance
                 );
 
                 OnOrderEvent(orderEvent);
+
+                // contingent orders: the pending orders of the list are no longer held once the working order fills
+                OnContingentOrdersTriggered([orderEvent], _algorithm?.Transactions);
             }
             catch (Exception e)
             {

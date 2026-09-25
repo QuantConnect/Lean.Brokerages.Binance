@@ -72,7 +72,7 @@ namespace QuantConnect.Brokerages.Binance.Tests
             };
             var algorithmSettings = new AlgorithmSettings();
             var transactions = new SecurityTransactionManager(null, securities);
-            transactions.SetOrderProcessor(new FakeOrderProcessor());
+            transactions.SetOrderProcessor(new OrderProviderOrderProcessor(orderProvider));
 
             var algorithm = new Mock<IAlgorithm>();
             algorithm.Setup(a => a.Transactions).Returns(transactions);
