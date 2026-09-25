@@ -307,7 +307,7 @@ namespace QuantConnect.Brokerages.Binance
                 OnOrderEvent(orderEvent);
 
                 // contingent orders: the pending orders of the list are no longer held once the working order fills
-                OnContingentOrdersTriggered([orderEvent], _algorithm.Transactions);
+                OnContingentOrdersTriggered([orderEvent], _algorithm?.Transactions);
             }
             catch (Exception e)
             {

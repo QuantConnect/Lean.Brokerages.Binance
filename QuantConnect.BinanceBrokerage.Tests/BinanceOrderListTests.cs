@@ -189,6 +189,18 @@ namespace QuantConnect.Brokerages.Binance.Tests
             Assert.AreEqual(-1, JsonConvert.DeserializeObject<Messages.Execution>(@"{""e"":""executionReport"",""i"":10,""x"":""NEW"",""X"":""NEW""}").OrderListId);
         }
 
+        [Test]
+        public void ExecutionOfAnOrderExpiredByItsOrderListIsParsed()
+        {
+            // the stop loss of a bracket expired because the take profit filled, as sent by the Binance Spot testnet
+            var execution = JsonConvert.DeserializeObject<Messages.Execution>(@"{""e"":""executionReport"",""E"":1790347971559,""s"":""BTCUSDT"",""c"":null,""S"":""SELL"",""o"":""STOP_LOSS_LIMIT"",""f"":""GTC"",""q"":""0.00100000"",""p"":""83610.29000000"",""P"":""83610.31000000"",""g"":304745,""x"":""EXPIRED"",""X"":""EXPIRED"",""r"":""NONE"",""eR"":""OCO_TRIGGER"",""i"":6463178,""l"":""0.00000000"",""z"":""0.00000000"",""L"":""0.00000000"",""n"":""0"",""N"":null,""T"":1790347971558,""O"":1790347961603,""V"":""EXPIRE_MAKER""}");
+
+            // the spot expiry reason "eR" is not read as the futures one "er"
+            Assert.AreEqual("EXPIRED", execution.OrderStatus);
+            Assert.AreEqual(304745, execution.OrderListId);
+            Assert.AreEqual(Enums.FuturesExpiredReason.None, execution.ExpiredReason);
+        }
+
         private static Order Member(int id, OrderContingency set, Order order)
         {
             order.Contingency = set.WithLinks([new(1, ContingencyType.OneCancelsOther)]);

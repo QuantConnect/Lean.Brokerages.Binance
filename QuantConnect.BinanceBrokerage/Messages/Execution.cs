@@ -128,6 +128,14 @@ namespace QuantConnect.Brokerages.Binance.Messages
         [JsonConverter(typeof(StringEnumConverter))]
         public FuturesExpiredReason ExpiredReason { get; set; }
 
+        /// <summary>
+        /// Expiry reason reported by Binance Spot, field <c>"eR"</c>, like <c>OCO_TRIGGER</c> for an order of an order list
+        /// expired because a related order filled. Not used, it's mapped so it's not read as the Futures <c>"er"</c> field:
+        /// the names only differ in case
+        /// </summary>
+        [JsonProperty("eR")]
+        private string SpotExpiredReason { get; set; }
+
         public OrderDirection Direction => Side.Equals("BUY", StringComparison.OrdinalIgnoreCase) ? OrderDirection.Buy : OrderDirection.Sell;
     }
 
