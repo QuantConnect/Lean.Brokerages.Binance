@@ -337,6 +337,7 @@ namespace QuantConnect.Brokerages.Binance
                     break;
 
                 case "STOP_MARKET":
+                case "TAKE_PROFIT_MARKET":
                     order = new StopMarketOrder(orderLeanSymbol, orderQuantity, item.StopPrice, orderTime);
                     break;
 
