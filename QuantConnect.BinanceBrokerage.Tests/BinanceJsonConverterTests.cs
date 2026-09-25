@@ -412,21 +412,21 @@ namespace QuantConnect.Brokerages.Binance.Tests
             // GET /fapi/v1/openAlgoOrders, and Binance reports conditional take-profit orders
             // from that second endpoint as orderType=TAKE_PROFIT_MARKET. An unmapped type makes
             // GetOpenOrders() raise a brokerage error, which aborts live algorithm initialization.
-            // Payload shape taken from a real GET /fapi/v1/openAlgoOrders response.
+            // Payload taken from a real GET /fapi/v1/openAlgoOrders response.
             const string json = @"{
-        ""algoId"": 2000000184401794,
-        ""clientAlgoId"": ""47Qn1gLQ29TTEJCBbQGPkb"",
+        ""algoId"": 2000001465496031,
+        ""clientAlgoId"": ""94bvkmwXzgO3tAr9dbzPEv"",
         ""algoType"": ""CONDITIONAL"",
         ""orderType"": ""TAKE_PROFIT_MARKET"",
-        ""symbol"": ""ACHUSDT"",
-        ""side"": ""BUY"",
+        ""symbol"": ""XRPUSDT"",
+        ""side"": ""SELL"",
         ""positionSide"": ""BOTH"",
-        ""timeInForce"": ""GTE_GTC"",
-        ""quantity"": ""600.0"",
+        ""timeInForce"": ""GTC"",
+        ""quantity"": ""30.0"",
         ""algoStatus"": ""NEW"",
         ""actualOrderId"": """",
         ""actualQty"": ""0.0"",
-        ""triggerPrice"": ""0.0094"",
+        ""triggerPrice"": ""1.88"",
         ""price"": ""0.0"",
         ""icebergQuantity"": null,
         ""selfTradePreventionMode"": ""EXPIRE_MAKER"",
@@ -435,10 +435,11 @@ namespace QuantConnect.Brokerages.Binance.Tests
         ""closePosition"": false,
         ""priceProtect"": false,
         ""reduceOnly"": false,
-        ""createTime"": 1767872015384,
-        ""updateTime"": 1767872015384,
+        ""createTime"": 1790355378257,
+        ""updateTime"": 1790355378257,
         ""triggerTime"": 0,
-        ""goodTillDate"": 0
+        ""goodTillDate"": 0,
+        ""isActivated"": false
     }";
 
             // Step 1: REST payload => Binance DTO
