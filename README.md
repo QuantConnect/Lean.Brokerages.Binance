@@ -123,11 +123,11 @@ Follow these steps to start local live trading with the Binance brokerage:
     Do you want to set the initial portfolio holdings? [y/N]: y
     Do you want to use the last portfolio holdings? [] [y/N]: n
     Setting custom initial portfolio holdings...
-    Symbol: GOOG
-    Symbol ID: GOOCV VP83T1ZUHROL
-    Quantity: 10
-    Average Price: 50
-    Portfolio Holdings: [{'symbol': 'GOOG', 'symbolId': 'GOOCV VP83T1ZUHROL', 'quantity': 10, 'averagePrice': 50.0}]
+    Symbol: BTCUSDT
+    Symbol ID: BTCUSDT 18N
+    Quantity: 1
+    Average Price: 60000
+    Portfolio Holdings: [{'symbol': 'BTCUSDT', 'symbolId': 'BTCUSDT 18N', 'quantity': 1, 'averagePrice': 60000.0}]
     Do you want to add more holdings? [y/N]: n
     ```
 
